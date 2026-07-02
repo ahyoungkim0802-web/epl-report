@@ -286,7 +286,8 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
   <textarea id="paste" placeholder="상세 성적표 내용을 붙여넣거나, 링크 주소(https://...)를 입력하세요…"></textarea>
   <div class="fld">
     <input class="t-name" id="t-name" placeholder="담당 교사명 (예: 김아영)" oninput="reflow()">
-    <textarea class="t-note" id="t-note" placeholder="선생님 코멘트 (직접 입력 — 리포트의 ‘④ 선생님 한마디’에 반영됩니다)" oninput="reflow()"></textarea>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;cursor:pointer"><input type="checkbox" id="inc-note" onchange="reflow()"> ④ 선생님 한마디 넣기</label>
+    <textarea class="t-note" id="t-note" placeholder="선생님 코멘트 (체크 시 리포트의 ‘④ 선생님 한마디’에 반영됩니다)" oninput="reflow()"></textarea>
   </div>
   <div class="row">
     <button class="btn btn-go" id="go-btn" onclick="runPaste()">분석하기</button>
@@ -456,7 +457,7 @@ function parseNetutor(raw){
 const BANDS={grade:['D','C','B','A'], level:['부족','보통','우수','최우수']};
 const TIERCOLOR=['var(--weak)','var(--warn)','var(--good)','var(--good)'];
 const TIERFILL=[40,60,80,100];
-function tier(rate){ if(rate>=90)return 3; if(rate>=75)return 2; if(rate>=60)return 1; return 0; }
+function tier(rate){ if(rate>=90)return 3; if(rate>=80)return 2; if(rate>=70)return 1; return 0; }
 function band(rate){
   const i=tier(rate), lab=(MODE==='level'?BANDS.level[i]:BANDS.grade[i]);
   return {t:lab, c:TIERCOLOR[i], gauge:lab};
@@ -464,55 +465,68 @@ function band(rate){
 
 function buildComment(d,num){
   const areas=d.areas.map(a=>({...a,rate:Math.round(a.correct/a.total*100)}));
-  const full=areas.filter(a=>a.rate===100).map(a=>a.name);
-  const low=[...areas].sort((x,y)=>x.rate-y.rate)[0];
+  const byRate=[...areas].sort((x,y)=>y.rate-x.rate);
+  const strongAreas=byRate.filter(a=>a.rate>=80);
+  const weakAreas=areas.filter(a=>a.rate<80).sort((x,y)=>x.rate-y.rate);
   const types=d.types.map(t=>({...t,rate:t.rate??Math.round(t.correct/t.total*100)}));
+  const ob=types.find(t=>t.name==='객관식'), sb=types.find(t=>t.name==='주관식');
   const prev=d.history.length>1?d.history[d.history.length-2]:null;
   const cur=d.history[d.history.length-1]||{score:d.score};
   const gain=prev?cur.score-prev.score:null;
-
-  // ① 강점 — 실제 데이터에 맞춰 객관적으로 (과장 없이)
   const orate=d.qtotal?Math.round(d.correct/d.qtotal*100):(d.score??0);
+  const pass=orate>=80;
+  const nm=d.name||'학생';
+  const wagwa=(w)=>{const ch=(w||'').slice(-1);const c=ch.charCodeAt(0);const bat=(c>=0xAC00&&c<=0xD7A3)?((c-0xAC00)%28!==0):/[a-zA-Z0-9]/.test(ch);return bat?'과':'와';};
+  const join=(arr)=>{if(!arr.length)return'';if(arr.length<2)return arr[0];const pre=arr.slice(0,-1);return pre.join(', ')+wagwa(pre[pre.length-1])+' '+arr[arr.length-1];};
+  const weakItems=[...new Set((d.weak||[]).map(w=>w.item))];
+
+  // ① 강점 — 선생님이 직접 관찰한 듯 자연스럽게
   let s=[];
-  if(gain!=null&&gain>0)
-    s.push(num?`직전 ${prev.round} ${prev.score}점에서 이번 ${cur.score}점으로 ${gain}점 상승했습니다.`
-              :`직전 회차에 비해 정답 문항 수가 늘며 성취 수준이 상승했습니다.`);
-  if(full.length){
-    s.push(`${full.join(', ')} 영역은 출제된 내용을 모두 정확히 풀었습니다.`);
-  }else{
-    const top=[...areas].sort((a,b)=>b.rate-a.rate)[0];
-    if(top&&top.rate>=70) s.push(`${top.name} 영역에서 가장 높은 정답률을 보였습니다.`);
+  const top=byRate[0];
+  if(top){
+    if(top.rate===100) s.push(`${top.name}는 이번 시험에서 한 문제도 놓치지 않았습니다.`);
+    else if(top.rate>=80) s.push(`${top.name}는 대부분 정확하게 풀어냈습니다.`);
+    else s.push(`이번 시험에서는 ${top.name} 쪽이 그나마 가장 나았습니다.`);
   }
-  const ob=types.find(t=>t.name==='객관식'), sb=types.find(t=>t.name==='주관식');
-  if(sb&&sb.rate>=80) s.push(`직접 문장을 쓰는 주관식 문항에서 높은 정확도를 보였습니다.`);
-  else if(sb&&ob&&sb.rate>ob.rate) s.push(`주관식 문항에서 객관식보다 높은 정확도를 보였습니다.`);
-  if(orate>=85) s.push(num?`총 ${d.qtotal}문항 중 ${d.correct}문항을 정확히 풀었습니다.`
-                          :`전체 문항의 대부분을 정확히 풀었습니다.`);
-  else if(num) s.push(`총 ${d.qtotal}문항 중 ${d.correct}문항을 정확히 풀었습니다.`);
-  if(!s.length){
-    const top=[...areas].sort((a,b)=>b.rate-a.rate)[0];
-    s.push(top?`${top.name} 영역에서 상대적으로 높은 정답률을 보였습니다.`
-              :`이번 결과를 바탕으로 다음 학습 방향을 설정할 수 있습니다.`);
+  const otherStrong=strongAreas.filter(a=>a!==top).map(a=>a.name);
+  if(otherStrong.length) s.push(`${join(otherStrong)}도 무리 없이 맞혔습니다.`);
+  if(sb&&sb.rate>=80) s.push(`특히 직접 문장을 쓰는 주관식에 강해서, 아는 내용을 문장으로 옮기는 힘이 보입니다.`);
+  else if(sb&&ob&&sb.rate>ob.rate) s.push(`객관식보다 주관식에서 더 정확한 점도 눈여겨볼 만합니다.`);
+  if(gain!=null&&gain>0){
+    if(gain>=20) s.push(`무엇보다 지난 회차보다 크게 올라왔습니다. 그동안의 노력이 점수로 이어지고 있어요.`);
+    else s.push(`지난 회차보다 조금씩 나아지고 있는 흐름도 반갑습니다.`);
   }
+  if(!s.length) s.push(`이번 결과를 출발점으로 삼아 다음 학습 방향을 잡아보려 합니다.`);
 
-  // ② 보완할 점
+  // ② 보완할 점 — 오답을 근거로, 사람 말투로
   let c=[];
-  if(low){
-    const wrong=low.total-low.correct;
-    c.push(num?`${low.name} 영역 정답률 ${low.rate}%로, ${low.total}문항 중 ${wrong}문항을 틀렸습니다.`
-              :`${low.name} 영역에서 오답이 집중되었습니다.`);
-    c.push(`개념을 확인한 뒤 같은 유형을 반복 연습할 필요가 있습니다.`);
+  const worst=weakAreas[0];
+  if(worst){
+    let w;
+    if(worst.rate<50) w=`${worst.name}는 아직 많이 헷갈려 합니다`;
+    else if(worst.rate<70) w=`${worst.name}는 절반 정도만 맞혔습니다`;
+    else w=`${worst.name}는 무난했지만 실수가 몇 개 나왔습니다`;
+    s.length?c.push(`반면 ${w}.`):c.push(`${w}.`);
+    const otherWeak=weakAreas.slice(1).map(a=>a.name);
+    if(otherWeak.length) c.push(`${join(otherWeak)}도 함께 다잡아야 합니다.`);
   }
-  if(d.weak.length){
-    const pages=[...new Set(d.weak.map(w=>w.page))].join(', ');
-    c.push(`재학습 페이지: ${pages}.`);
-  }
+  if(weakItems.length) c.push(`오답을 보면 ${join(weakItems.slice(0,4))}처럼 헷갈리기 쉬운 지점에서 주로 틀렸습니다.`);
+  if(ob&&sb&&ob.rate-sb.rate>=20) c.push(`아는 개념도 막상 직접 써 보라고 하면 놓치는 편이라, 문장으로 옮겨 쓰는 연습이 필요합니다.`);
+  else if(sb&&ob&&sb.rate-ob.rate>=20) c.push(`문항을 급하게 읽다 실수하는 경우가 보여, 끝까지 정확히 읽는 연습이 도움이 되겠습니다.`);
+  if(!pass) c.push(`이번 점수는 통과 기준(정답률 80%)에는 조금 못 미쳤습니다. 한 달간 워크북으로 이 부분을 다시 다진 뒤, 재시험을 거쳐 다음 단계로 넘어가겠습니다.`);
 
-  // ③ 학부모님께
+  // ③ 학부모님께 — 친근하되 단호하게
   let p=[];
-  p.push(`이번 결과는 ${d.book} ${d.exam} 범위 기준입니다.`);
-  if(low) p.push(`다음 회차까지 ${low.name} 영역을 중점 연습 과제로 진행하겠습니다.`);
-  p.push(`회차별 성장 흐름을 함께 확인하시면 언어적 성장의 방향이 분명해집니다.`);
+  p.push(`이번 결과는 ${d.book} ${d.exam} 범위를 기준으로 한 절대평가입니다.`);
+  p.push(`저희는 정답률 80% 이상(A·B)을 통과로 보고, 그 아래는 재학습 과정을 거칩니다.`);
+  if(!pass){
+    p.push(`${nm} 학생은 아직 교재 이해가 완전히 끝나지 않아, 한 달간 워크북으로 부족한 부분을 채운 뒤 재시험을 봅니다.`);
+    if(worst) p.push(`특히 ${worst.name} 영역을 중점적으로 보완하겠습니다.`);
+    p.push(`재시험을 통과하면 다음 단계 교재로 올라갑니다.`);
+  }else{
+    p.push(`${nm} 학생은 통과 기준을 넘겨 다음 단계 교재로 올라갑니다.`);
+    if(worst) p.push(`다만 ${worst.name} 영역은 다음 단계에서도 계속 살피겠습니다.`);
+  }
 
   return {strong:s.join('\n'),care:c.join('\n'),parent:p.join('\n')};
 }
@@ -573,6 +587,7 @@ function render(d){
         </div>
         <div class="facts">
           <div class="fact"><div class="l">${MODE==='grade'?'성취 등급':MODE==='level'?'성취 단계':'성취 수준'}</div><div class="v" style="color:${ov.c}"${NUM?'':' contenteditable="true"'}>${NUM?score+'<small>점</small>':ov.t}</div></div>
+          <div class="fact"><div class="l">진급 상태</div><div class="v" style="color:${rate>=80?'var(--good)':'var(--weak)'}">${rate>=80?'통과':'재학습'}</div></div>
           <div class="fact"><div class="l">누적 응시</div><div class="v">${hist.length||1}<small>회</small></div></div>
         </div>
       </div>
@@ -638,12 +653,13 @@ function render(d){
   // 코멘트
   const tName=(document.getElementById('t-name')||{}).value?.trim()||'';
   const tNote=(document.getElementById('t-note')||{}).value?.trim()||'';
+  const incNote=!!(document.getElementById('inc-note')||{}).checked;
   html+=`<div class="block blk-comment"><div class="eyebrow">담당 교사 코멘트</div>
     <div class="comment">
       <div class="cseg"><div class="ct">① 강점</div><div class="cbody" contenteditable="true">${cm.strong}</div></div>
       <div class="cseg"><div class="ct">② 보완할 점</div><div class="cbody" contenteditable="true">${cm.care}</div></div>
       <div class="cseg"><div class="ct">③ 학부모님께</div><div class="cbody" contenteditable="true">${cm.parent}</div></div>
-      <div class="cseg"><div class="ct">④ 선생님 한마디</div><div class="cbody" contenteditable="true" data-ph="학생에게 전하고 싶은 말을 입력하세요">${tNote}</div></div>
+      ${incNote?`<div class="cseg"><div class="ct">④ 선생님 한마디</div><div class="cbody" contenteditable="true" data-ph="학생에게 전하고 싶은 말을 입력하세요">${tNote}</div></div>`:''}
     </div>
     ${tName?`<div class="sign">— 담당 ${tName} 선생님</div>`:''}
     <div class="edit-hint no-print">코멘트는 클릭해 직접 수정할 수 있습니다.</div>
