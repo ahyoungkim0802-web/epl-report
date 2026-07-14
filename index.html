@@ -403,10 +403,8 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
   </div>
   <div class="modesel">
     <span class="msl">AI 정밀 분석</span>
-    <input id="api-key" class="t-name" style="width:280px" type="password" placeholder="Anthropic API 키 — sk-ant-…" oninput="saveKey()">
-    <button class="btn btn-go" onclick="saveKey(true)">🔑 키 저장</button>
-    <button class="btn btn-ghost" onclick="clearKey()">지우기</button>
-    <span id="key-status" class="msl-note">키를 한 번 저장하면 이 브라우저(기기)에 남아 다시 입력할 필요가 없습니다.</span>
+    <input id="api-key" type="hidden" value="via-proxy">
+    <span id="key-status" class="msl-note">✅ 서버(프록시)에 API 키가 설정되어 있어 <b>키 입력이 필요 없습니다.</b> 바로 사진 채점을 사용하세요.</span>
   </div>
   <div class="modesel">
     <span class="msl">답안지 생성기</span>
@@ -1047,14 +1045,8 @@ function ksSkip(){
   try{ localStorage.setItem('epl_key_setup_done','1'); }catch(e){}
   document.getElementById('key-setup').style.display='none';
 }
-function maybeShowKeySetup(){
-  let saved='',done=''; try{saved=localStorage.getItem('epl_api_key')||'';done=localStorage.getItem('epl_key_setup_done')||'';}catch(e){}
-  if(!saved && !done){
-    const box=document.getElementById('key-setup'); if(box){ box.style.display='flex';
-      const i=document.getElementById('ks-input'); if(i) setTimeout(()=>i.focus(),120); }
-  }
-}
-function getKey(){ const el=document.getElementById('api-key'); let k=el?el.value.trim():''; if(!k){try{k=localStorage.getItem('epl_api_key')||'';if(k&&el)el.value=k;}catch(e){}} return k; }
+function maybeShowKeySetup(){ /* 프록시 사용: 키 입력 불필요 → 셋업 모달 표시 안 함 */ }
+function getKey(){ return 'via-proxy'; } /* 키는 서버(Cloudflare Worker)에 저장됨 → 브라우저 입력 불필요. 서버가 실제 x-api-key를 붙임 */
 
 /* 📸 채점답안 사진 → Claude Vision 자동 채점·분류 → 성적표 */
 function _readImg(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const s=r.result.split(',');res({media:(file.type||'image/jpeg'),data:s[1]});};r.onerror=rej;r.readAsDataURL(file);});}
@@ -1375,7 +1367,7 @@ async function aiReadAnswers(files,preset){
   '읽을 문항: '+qlist+'\n'+
   'JSON만 출력(설명·코드펜스 금지): {"name":"","date":"","answers":[{"n":1,"student":""}]}';
   const content=[{type:'text',text:prompt}]; imgs.forEach(im=>content.push({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
-  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content}]})});
+  const res=await fetch('https://epl-report-proxy.ahyoungkim0802.workers.dev',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content}]})});
   if(!res.ok){let msg='';try{const e=await res.json();msg=(e&&e.error&&e.error.message)||'';}catch(_){}throw new Error('API '+res.status+(msg?' — '+msg:''));}
   const data=await res.json();
   return _extractJSON((data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(''));
@@ -1397,7 +1389,7 @@ async function aiParseImages(files){
 'JSON 스키마:\n{"name":"","grade":"","date":"","book":"","exam":"","score":0,"total":100,"correct":0,"qtotal":0,"types":[],"areas":[{"name":"","total":0,"correct":0}],"history":[],"weak":[{"item":"","page":""}]}';
   const content=[{type:'text',text:prompt}];
   imgs.forEach(im=>content.push({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
+  const res=await fetch('https://epl-report-proxy.ahyoungkim0802.workers.dev',{
     method:'POST',
     headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2500,messages:[{role:'user',content}]})
@@ -1440,7 +1432,7 @@ async function aiParse(text){
 '- 깨진 숫자(예 "9 6점"=96점)·깨진 날짜("2026 .06 .08"=2026.06.08) 복원. 점수·정답률이 다르면 둘 다 그대로.\n'+
 '- 등급(A/B/C/D)은 넣지 말 것(도구가 계산).\n\n'+
 'JSON 스키마:\n{"name":"","grade":"","date":"","book":"","exam":"","score":0,"total":100,"correct":0,"qtotal":40,"types":[{"name":"","total":0,"correct":0,"rate":0}],"areas":[{"name":"","total":0,"correct":0}],"history":[{"round":"","date":"","score":0,"rate":0}],"weak":[{"item":"","page":""}]}\n\n텍스트:\n'+text;
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
+  const res=await fetch('https://epl-report-proxy.ahyoungkim0802.workers.dev',{
     method:'POST',
     headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,messages:[{role:'user',content:prompt}]})
