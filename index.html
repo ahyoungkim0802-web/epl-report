@@ -618,14 +618,15 @@ function buildComment(d,num){
   p.push(`이번 결과는 ${d.book} ${d.exam} 범위의 절대평가입니다.`);
   p.push(`정답률 70% 이상은 PASS, 그 미만은 FAIL입니다.`);
   if(!pass){
-    p.push(`${nm} 학생은 전체 정답률 ${orate}%로, 교재 이해가 완료되지 않았습니다.`);
+    p.push(`통과 기준(70%)에 도달하지 못해, 교재 이해가 완료되지 않았습니다.`);
     if(worst) p.push(`${worst.name} 영역을 중점 보완 과제로, 1개월간 워크북 학습 후 재시험을 진행합니다.`);
     p.push(`재시험 통과 시 다음 단계 교재로 진입합니다.`);
   }else{
-    p.push(`${nm} 학생은 전체 정답률 ${orate}%로 통과 기준을 충족하여 다음 단계 교재로 진입합니다.`);
+    p.push(`통과 기준을 충족하여 다음 단계 교재로 진입합니다.`);
     if(worst) p.push(`${worst.name} 영역(${worst.rate}%)은 별도 워크북 없이 워크시트 오답 정리로 보완합니다.`);
     p.push(`전반적으로 학습을 안정적으로 따라오고 있습니다.`);
   }
+  p.push(`감사합니다^^`);
 
   return {strong:s.join('\n'),care:c.join('\n'),parent:p.join('\n')};
 }
