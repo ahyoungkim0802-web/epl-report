@@ -222,13 +222,40 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
 .as-who .f .ln{flex:1;border-bottom:1.4px solid var(--ink-soft);height:20px}
 .as-note{font-size:11px;color:var(--muted);margin:2px 0 14px}
 .as-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:0 12mm;align-content:space-between;padding-top:3mm}
-.as-q{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--line-soft);min-height:34px}
-.as-q .qn{font-weight:700;font-size:14px;width:24px;text-align:right}
+.as-q{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line-soft);min-height:40px}
+.as-q .qn{font-weight:800;font-size:16px;width:26px;text-align:right;color:#000}
 .as-q .qt{font-size:8.5px;color:var(--muted);width:28px;letter-spacing:-.3px}
-.as-bub{display:flex;gap:9px}
-.as-bub .b{width:21px;height:21px;border:1.5px solid var(--ink-soft);border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-soft)}
+.as-bub{display:flex;gap:12px}
+.as-bub .b{width:28px;height:28px;border:2px solid #000;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000}
 .as-write{flex:1;border-bottom:1.4px solid var(--ink-soft);height:22px}
+/* 채점 결과 확인·수정(사람 검수) */
+#grade-review{position:fixed;inset:0;z-index:10001;background:rgba(20,18,16,.55);display:none;align-items:center;justify-content:center;padding:16px}
+.gr-card{background:var(--card);border-radius:14px;max-width:740px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.32);overflow:hidden}
+.gr-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line-soft)}
+.gr-head b{font-family:'Fraunces',serif;font-size:17px;color:var(--ink)}
+.gr-sub{font-size:11px;color:var(--muted);margin-left:4px}
+.gr-score{font-size:13px;color:var(--ink-soft);white-space:nowrap}
+.gr-score b{color:var(--good);font-size:17px}
+.gr-meta{padding:9px 20px;font-size:12px;color:var(--ink-soft);border-bottom:1px solid var(--line-soft);display:flex;gap:14px;align-items:center}
+.gr-in{border:1px solid var(--line-soft);border-radius:6px;padding:5px 8px;font-size:13px;background:var(--wash);color:var(--ink)}
+.gr-body{overflow-y:auto;padding:8px 14px;display:grid;grid-template-columns:1fr 1fr;gap:2px 18px}
+.gr-row{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:8px;font-size:13px}
+.gr-row.no{background:#fdf1ee}
+.gr-n{width:24px;text-align:right;font-weight:700;color:var(--ink)}
+.gr-ty{width:14px;font-size:10px;color:var(--muted)}
+.gr-bubs{display:flex;gap:4px}
+.gr-b{width:25px;height:25px;border:1.5px solid var(--line);border-radius:50%;background:var(--card);cursor:pointer;font-size:12px;color:var(--ink-soft);padding:0}
+.gr-b.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.gr-b.gr-x{border-radius:6px}
+.gr-txt{flex:1;min-width:90px;border:1px solid var(--line-soft);border-radius:6px;padding:5px 8px;font-size:13px;background:var(--wash);color:var(--ink)}
+.gr-ans{font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:auto;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+.gr-force{display:flex;gap:3px;flex-shrink:0}
+.gr-force .gf{width:24px;height:24px;border:1.5px solid var(--line);border-radius:6px;background:var(--card);cursor:pointer;font-size:12px;font-weight:800;color:var(--muted);padding:0}
+.gr-force .gf.o.on{background:var(--good);border-color:var(--good);color:#fff}
+.gr-force .gf.x.on{background:var(--weak);border-color:var(--weak);color:#fff}
+.gr-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid var(--line-soft)}
+.gr-hint{font-size:11px;color:var(--muted)}
 /* 최초 1회 API 키 설정 팝업 */
 #key-setup{position:fixed;inset:0;z-index:10000;background:rgba(20,18,16,.55);display:none;align-items:center;justify-content:center;padding:20px}
 .ks-card{background:var(--card);border:1px solid var(--line-soft);border-radius:14px;max-width:450px;width:100%;padding:26px 26px 20px;box-shadow:0 20px 60px rgba(0,0,0,.32)}
@@ -411,6 +438,22 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
     <div class="ks-row">
       <button class="ks-skip" onclick="ksSkip()">지금은 건너뛰기 (내부 파서 사용)</button>
       <button class="btn btn-go" onclick="ksSave()">저장하고 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- 채점 결과 확인·수정 -->
+<div id="grade-review" class="no-print">
+  <div class="gr-card">
+    <div class="gr-head">
+      <div><b>채점 결과 확인·수정</b><span class="gr-sub">AI가 읽은 학생 답을 확인하고, 틀린 것만 고친 뒤 리포트를 만드세요.</span></div>
+      <div class="gr-score">정답 <b id="gr-correct">0</b> / <span id="gr-total">0</span> · <b id="gr-rate">0</b>%</div>
+    </div>
+    <div class="gr-meta">이름 <input id="gr-name" class="gr-in" style="width:110px"> 날짜 <input id="gr-date" class="gr-in" style="width:90px"></div>
+    <div id="gr-body" class="gr-body"></div>
+    <div class="gr-foot">
+      <span class="gr-hint">객관식은 번호 클릭, 주관식은 칸에서 직접 수정하면 O·X가 바로 바뀝니다.</span>
+      <span><button class="btn btn-ghost" onclick="closeReview()">취소</button> <button class="btn btn-go" onclick="applyReview()">✅ 리포트 생성</button></span>
     </div>
   </div>
 </div>
@@ -1242,17 +1285,93 @@ function gradeAgainstPreset(preset,answers){
   });
   return {areas:Object.values(A),types:Object.values(T),weak,correct,qtotal:preset.q.length};
 }
+
+/* ===== 채점 결과 확인·수정(사람 검수) ===== */
+let PENDING=null;
+const _CIRC=['①','②','③','④','⑤'];
+function _isOk(q,stu){ return q.type==='객관식' ? (_circle(stu)!==''&&_circle(stu)===_circle(q.ans)) : _textOk(stu,q.ans); }
+function _eff(q){ const o=PENDING.ov[q.n]; return o!==undefined ? o : _isOk(q,PENDING.ans[q.n]||''); }
+function showGradeReview(preset,read){
+  PENDING={preset, ans:{}, ov:{}};
+  const byN={}; (read.answers||[]).forEach(a=>byN[a.n]=(a.student!=null?a.student:'').toString());
+  preset.q.forEach(q=>PENDING.ans[q.n]=byN[q.n]||'');
+  document.getElementById('gr-name').value=(read.name||'').trim();
+  document.getElementById('gr-date').value=(read.date||'').trim();
+  document.getElementById('gr-total').textContent=preset.q.length;
+  renderReviewBody();
+  document.getElementById('grade-review').style.display='flex';
+}
+function renderReviewBody(){
+  const p=PENDING.preset, box=document.getElementById('gr-body'); let html='';
+  p.q.forEach(q=>{
+    const stu=PENDING.ans[q.n]||'', ok=_eff(q), forced=PENDING.ov[q.n]!==undefined;
+    let inp;
+    if(q.type==='객관식'){
+      const cur=_circle(stu);
+      inp='<span class="gr-bubs">'+[1,2,3,4,5].map(i=>`<button class="gr-b ${cur==i?'on':''}" onclick="setObj(${q.n},'${_CIRC[i-1]}')">${i}</button>`).join('')+`<button class="gr-b gr-x ${cur===''?'on':''}" onclick="setObj(${q.n},'')" title="무응답">·</button></span>`;
+    } else {
+      inp=`<input class="gr-txt" value="${(stu||'').replace(/"/g,'&quot;')}" oninput="setSub(${q.n},this.value)">`;
+    }
+    const force=`<span class="gr-force"><button class="gf o ${ok?'on':''}" onclick="setForce(${q.n},true)" title="정답 처리">O</button><button class="gf x ${ok?'':'on'}" onclick="setForce(${q.n},false)" title="오답 처리">X</button></span>`;
+    html+=`<div class="gr-row ${ok?'ok':'no'}" data-n="${q.n}"><span class="gr-n">${q.n}</span><span class="gr-ty">${q.type==='객관식'?'객':'주'}</span>${inp}<span class="gr-ans">정답 ${q.ans}</span>${force}</div>`;
+  });
+  box.innerHTML=html;
+  _grScore();
+}
+function _grScore(){
+  const p=PENDING.preset; let c=0; p.q.forEach(q=>{if(_eff(q))c++;});
+  document.getElementById('gr-correct').textContent=c;
+  document.getElementById('gr-rate').textContent=Math.round(c/p.q.length*100);
+}
+function _refreshRow(n){
+  const p=PENDING.preset, q=p.q.find(x=>x.n==n), ok=_eff(q);
+  const row=document.querySelector('#gr-body .gr-row[data-n="'+n+'"]');
+  if(row){ row.className='gr-row '+(ok?'ok':'no');
+    const o=row.querySelector('.gf.o'), x=row.querySelector('.gf.x');
+    if(o) o.className='gf o '+(ok?'on':''); if(x) x.className='gf x '+(ok?'':'on'); }
+  _grScore();
+}
+function setObj(n,val){ PENDING.ans[n]=val; delete PENDING.ov[n]; renderReviewBody(); }
+function setSub(n,val){ PENDING.ans[n]=val; delete PENDING.ov[n]; _refreshRow(n); }   // 글자 고치면 자동 재채점
+function setForce(n,val){ PENDING.ov[n]=val; _refreshRow(n); }                          // 글자 안 고치고 O/X 강제
+function applyReview(){
+  const p=PENDING.preset;
+  const A={},T={},weak=[]; let correct=0;
+  p.q.forEach(q=>{
+    const ok=_eff(q);
+    A[q.area]=A[q.area]||{name:q.area,total:0,correct:0}; A[q.area].total++;
+    T[q.type]=T[q.type]||{name:q.type,total:0,correct:0}; T[q.type].total++;
+    if(ok){correct++;A[q.area].correct++;T[q.type].correct++;}
+    else weak.push({item:`${q.n}번 · ${q.area}`,page:''});
+  });
+  const d={name:(document.getElementById('gr-name').value||'').trim(), grade:'', date:(document.getElementById('gr-date').value||'').trim(),
+    book:p.book, exam:p.exam, correct, qtotal:p.q.length, score:Math.round(correct/p.q.length*100), total:100,
+    areas:Object.values(A), types:Object.values(T), weak, history:[]};
+  closeReview();
+  CURRENT=d; render(d); document.getElementById('sheet').scrollIntoView({behavior:'smooth'});
+}
+function closeReview(){ document.getElementById('grade-review').style.display='none'; PENDING=null; }
 async function aiReadAnswers(files,preset){
   const key=getKey(); if(!key) throw new Error('먼저 "AI 정밀 분석" 칸에 API 키를 입력하세요.');
   const imgs=[]; for(const f of files) imgs.push(await _readImg(f));
-  const qlist=preset.q.map(q=>`${q.n}번(${q.type})`).join(', ');
-  const prompt='너는 채점된 영어 시험 답안지에서 학생이 고른/쓴 답만 읽는 판독기다. 정오 판단은 절대 하지 말고, 학생의 답 그대로 읽어라.\n'+
-  '- 객관식: 학생이 고른 번호를 ①②③④⑤ 중 하나로. 연필로 동그라미 친 것이 학생 답이다. 빨간펜(체크·큰 원·빗금)은 교사 채점 표시이니 학생 답으로 착각하지 말 것.\n'+
-  '- 주관식/빈칸: 학생이 손으로 쓴 영어 또는 한글을 그대로 읽어라(철자 그대로).\n'+
-  '- 학생이 비운 문항은 빈 문자열.\n'+
-  '- 여러 장이면 한 학생의 연속 페이지다. 모든 문항을 읽어라.\n'+
-  '- 상단 "이름" 칸의 한글 손글씨를 특히 주의 깊게 읽어라. 성+이름 2~4글자 한글로만, 존재하는 자연스러운 한국 이름으로 판독한다(예: 이라온, 임제이). 획을 헷갈리기 쉬우니 가장 그럴듯한 실제 이름으로 확정하고, 도저히 못 읽으면 name은 빈 문자열로 둔다.\n'+
-  '- 날짜도 읽어라.\n'+
+  const qlist=preset.q.map(q=>{
+    if(q.type==='객관식') return `${q.n}번(객관식)`;
+    const hint=/[가-힣]/.test(q.ans)?'한글 단어/구':(q.ans.trim().split(/\s+/).length>=3?'영어 문장(어순 그대로)':'영어 단어/짧은 구');
+    return `${q.n}번(주관식·${hint})`;
+  }).join(', ');
+  const prompt='너는 EPL 코드 답안지에서 학생이 표시/작성한 답만 읽는 판독기다. 정오 판단은 절대 하지 말고, 학생의 답을 그대로 읽어라.\n'+
+  '[객관식] 각 문항은 ①②③④⑤ 다섯 개의 빈 원이 나란히 있고, 학생은 고른 번호의 원을 검게 색칠(채움)하거나 진하게 칠한다. 안이 채워진(검게 칠해진) 원 하나의 번호를 읽어라. 부분적으로만 칠해졌어도 가장 진하게 채워진 원을 고른다. 아무 원도 채워지지 않았으면 빈 문자열.\n'+
+  '[주관식/빈칸] 이 부분을 특히 정성껏 읽어라. 밑줄 위·옆의 손글씨를 한 글자도 빠짐없이 읽는다. 규칙:\n'+
+  '  · 영어는 철자 그대로, 한글은 한글 그대로 옮긴다. 영어를 한글로, 한글을 영어로 바꾸지 마라.\n'+
+  '  · 문장(영작·배열)은 단어 순서를 바꾸지 말고 왼쪽→오른쪽, 윗줄→아랫줄 순서로 이어서 읽는다.\n'+
+  '  · 줄로 그어 지운 취소선 글자는 무시하고, 지우지 않은 최종 답만 읽는다.\n'+
+  '  · 흘림·연필 자국이 흐려도 문맥과 글자 형태로 가장 그럴듯한 실제 단어/철자로 확정한다. 빈칸이 확실할 때만 빈 문자열.\n'+
+  '  · 각 문항 옆의 힌트(예: 영어 문장, 한글 단어)는 그 답의 형태를 알려주는 참고일 뿐, 힌트에 맞춰 답을 지어내지 마라.\n'+
+  '- 이 답안지에는 보통 학생 필기만 있다. 정답 여부나 채점 표시는 없다고 보고, 오직 학생이 칠하거나 쓴 것만 읽어라.\n'+
+  '- 번호 배치 주의: 문항이 왼쪽 열과 오른쪽 열에 1,2,3,4… 지그재그로 놓일 수 있다. 행 순서로 넘겨짚지 말고, 각 문항 옆에 인쇄된 번호 라벨과 유형(객관식/주관식)을 보고 정확히 대응시켜라.\n'+
+  '- 상단 "이름" 칸의 한글 손글씨를 성+이름 2~4글자, 존재하는 자연스러운 한국 이름으로 판독한다(획을 헷갈리기 쉬우니 가장 그럴듯한 실제 이름으로 확정, 못 읽으면 빈 문자열).\n'+
+  '- "점수"·"날짜" 칸도 읽어라.\n'+
+  '- 여러 장이면 한 학생의 연속 페이지다. 모든 문항을 빠짐없이 읽어라.\n'+
   '읽을 문항: '+qlist+'\n'+
   'JSON만 출력(설명·코드펜스 금지): {"name":"","date":"","answers":[{"n":1,"student":""}]}';
   const content=[{type:'text',text:prompt}]; imgs.forEach(im=>content.push({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
@@ -1298,12 +1417,7 @@ async function handleImages(files){
     if(presetKey && PRESETS[presetKey]){
       const preset=PRESETS[presetKey];
       const read=await aiReadAnswers(files,preset);
-      const g=gradeAgainstPreset(preset,read.answers||[]);
-      const d={name:(read.name||'').trim(), grade:'', date:(read.date||'').trim(),
-        book:preset.book, exam:preset.exam,
-        correct:g.correct, qtotal:g.qtotal, score:Math.round(g.correct/g.qtotal*100), total:100,
-        areas:g.areas, types:g.types, weak:g.weak, history:[]};
-      CURRENT=d; render(d); document.getElementById('sheet').scrollIntoView({behavior:'smooth'});
+      showGradeReview(preset, read);   // 사람 검수 후 리포트 생성
     } else {
       const d=await aiParseImages(files);
       if(d && (d.areas&&d.areas.length || d.qtotal)){
