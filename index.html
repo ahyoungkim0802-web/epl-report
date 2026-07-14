@@ -10,6 +10,7 @@
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
   --ink:#2b2926; --ink-soft:#5a554e; --muted:#928b80;
@@ -143,9 +144,10 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
 .ardel:hover{background:var(--weak);color:#fff;border-color:var(--weak)}
 .sheet.shot .ardel{display:none!important}
 .arow .an{font-size:12.5px;color:var(--ink-soft);font-weight:500}
-.track{height:9px;background:var(--line-soft);border-radius:20px;overflow:hidden}
+.track{height:12px;background:var(--line-soft);border-radius:20px;overflow:hidden}
 .fill{height:100%;border-radius:20px;transition:width .7s cubic-bezier(.22,1,.36,1)}
 .arow .ap{font-family:'Fraunces',serif;font-size:13px;text-align:right;font-weight:600}
+.eyebrow-sub{font-weight:400;font-size:9px;letter-spacing:.6px;color:var(--muted);opacity:.85;margin-left:5px}
 
 /* type split */
 .types{display:grid;grid-template-columns:1fr 1fr;gap:13px}
@@ -156,7 +158,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
 
 /* weak list */
 .weak{border:1px solid var(--clay-soft);background:#fdf9f6;border-radius:11px;padding:6px 4px}
-.weak .wi{display:flex;justify-content:space-between;padding:9px 16px;
+.weak .wi{display:flex;justify-content:space-between;padding:13px 18px;
   font-size:12.5px;border-bottom:1px solid var(--clay-soft)}
 .weak .wi:last-child{border-bottom:none}
 .weak .wi span{color:var(--ink-soft)}
@@ -195,6 +197,58 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
   .who .meta{margin-left:0;text-align:left;width:100%}
   .arow{grid-template-columns:96px 1fr 40px}
 }
+/* ===== 답안지 생성기 ===== */
+#gen-overlay{position:fixed;inset:0;z-index:9999;background:var(--wash);overflow:auto;padding:0 0 40px}
+.gen-bar{position:sticky;top:0;z-index:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  padding:12px 18px;background:var(--card);border-bottom:1px solid var(--line-soft)}
+.gen-hint{font-size:12px;color:var(--muted)}
+#gen-sheet{width:210mm;min-height:297mm;margin:22px auto;background:#fff;box-sizing:border-box;
+  padding:14mm 15mm;box-shadow:0 6px 30px rgba(0,0,0,.12);color:var(--ink);
+  display:flex;flex-direction:column}
+.as-head{display:flex;justify-content:space-between;align-items:flex-start;
+  border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:4px}
+.as-brand .wm{font-family:'Fraunces',serif;font-size:30px;font-weight:600;letter-spacing:.5px;line-height:1}
+.as-brand .tag{font-size:10px;letter-spacing:2px;color:var(--muted);margin-top:3px;text-transform:uppercase}
+.as-brand .exam{font-family:'Fraunces',serif;font-size:19px;margin-top:12px}
+.as-brand .book{font-size:13px;color:var(--ink-soft);margin-top:2px}
+.as-code{text-align:center;min-width:110px}
+.as-code .qr{width:92px;height:92px;margin:0 auto 5px;display:flex;align-items:center;justify-content:center}
+.as-code .qr img,.as-code .qr canvas{width:92px!important;height:92px!important}
+.as-code .ctxt{font-family:'Fraunces',serif;font-size:14px;font-weight:600;letter-spacing:1px}
+.as-code .clab{font-size:8.5px;color:var(--muted);letter-spacing:1.5px;margin-top:1px}
+.as-who{display:flex;gap:26px;padding:14px 0 10px;font-size:14px}
+.as-who .f{display:flex;align-items:flex-end;gap:8px;flex:1}
+.as-who .f b{font-size:12.5px;color:var(--ink-soft);white-space:nowrap}
+.as-who .f .ln{flex:1;border-bottom:1.4px solid var(--ink-soft);height:20px}
+.as-note{font-size:11px;color:var(--muted);margin:2px 0 14px}
+.as-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:0 12mm;align-content:space-between;padding-top:3mm}
+.as-q{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--line-soft);min-height:34px}
+.as-q .qn{font-weight:700;font-size:14px;width:24px;text-align:right}
+.as-q .qt{font-size:8.5px;color:var(--muted);width:28px;letter-spacing:-.3px}
+.as-bub{display:flex;gap:9px}
+.as-bub .b{width:21px;height:21px;border:1.5px solid var(--ink-soft);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-soft)}
+.as-write{flex:1;border-bottom:1.4px solid var(--ink-soft);height:22px}
+/* 최초 1회 API 키 설정 팝업 */
+#key-setup{position:fixed;inset:0;z-index:10000;background:rgba(20,18,16,.55);display:none;align-items:center;justify-content:center;padding:20px}
+.ks-card{background:var(--card);border:1px solid var(--line-soft);border-radius:14px;max-width:450px;width:100%;padding:26px 26px 20px;box-shadow:0 20px 60px rgba(0,0,0,.32)}
+.ks-card h3{font-family:'Fraunces',serif;font-size:20px;margin:0 0 8px;color:var(--ink)}
+.ks-card p{font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.6}
+.ks-card input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid var(--line-soft);border-radius:9px;font-size:14px;margin-bottom:14px;background:var(--wash);color:var(--ink)}
+.ks-row{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.ks-skip{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;margin-right:auto;text-decoration:underline;padding:4px}
+/* 전·후 비교: 이전 회차 직접 추가 */
+.prevadd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 6px;padding:10px 12px;
+  background:var(--wash);border:1px dashed var(--line-soft);border-radius:10px}
+.prevadd .pl{font-weight:700;font-size:12px;color:var(--ink)}
+.prevadd .ph{font-size:11px;color:var(--muted);margin-right:auto}
+.prevadd .pvi{padding:6px 8px;border:1px solid var(--line-soft);border-radius:7px;font-size:12px;background:var(--card);color:var(--ink)}
+@media print{
+  body.gen-open>*:not(#gen-overlay){display:none!important}
+  body.gen-open #gen-overlay{position:static!important;display:block!important;background:#fff!important;overflow:visible!important;padding:0}
+  body.gen-open #gen-overlay .gen-bar{display:none!important}
+  body.gen-open #gen-sheet{box-shadow:none!important;margin:0 auto!important;width:100%!important;height:262mm!important;min-height:0!important;padding:0!important}
+}
 @media print{
   @page{size:A4 portrait;margin:11mm}
   html,body{background:#fff!important;padding:0;margin:0}
@@ -210,7 +264,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
   .body{padding:9px 0 0;display:grid;grid-template-columns:1fr 1fr;
         gap:9px 16px;align-items:start}
   .block{margin-bottom:0;break-inside:avoid}
-  .blk-score,.blk-comment{grid-column:1/-1}
+  .blk-score,.blk-comment,.blk-area,.blk-weak{grid-column:1/-1}
   .eyebrow{margin-bottom:9px;font-size:9.5px}
 
   /* compact 성취도 */
@@ -229,12 +283,13 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
   .arow{grid-template-columns:108px 1fr 52px}
   .blk-types{align-self:stretch;display:flex;flex-direction:column}
   .blk-types .types{flex:1}
-  .blk-types .tcard{display:flex;flex-direction:column;justify-content:center}
+  .blk-types .tcard{display:flex;flex-direction:column;justify-content:space-around}
 
   /* comment 2×2 */
   .blk-comment .comment{display:grid;grid-template-columns:1fr 1fr;gap:0}
   .cseg{padding:10px 14px;border-bottom:1px solid var(--line)}
   .cseg:nth-child(odd){border-right:1px solid var(--line)}
+  .blk-comment .comment .cseg:last-child:nth-child(odd){grid-column:1/-1;border-right:none}
   .cseg .cbody{font-size:11.5px;line-height:1.6}
   .sign{margin-top:8px}
 
@@ -244,7 +299,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 }
 /* A4 snapshot — JPG 캡처용 (인쇄 레이아웃을 화면에서 재현) */
-.sheet.shot{width:794px;min-height:1122px;padding:34px 40px;border:none;
+.sheet.shot{width:794px;padding:34px 40px;border:none;
   box-shadow:none;border-radius:0;background:#fff}
 .sheet.shot .head{padding:0 0 9px}
 .sheet.shot .who{padding:9px 0;margin-bottom:4px;background:none;
@@ -252,7 +307,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
 .sheet.shot .body{padding:9px 0 0;display:grid;grid-template-columns:1fr 1fr;
   gap:9px 16px;align-items:start}
 .sheet.shot .block{margin-bottom:0}
-.sheet.shot .blk-score,.sheet.shot .blk-comment{grid-column:1/-1}
+.sheet.shot .blk-score,.sheet.shot .blk-comment,.sheet.shot .blk-area,.sheet.shot .blk-weak{grid-column:1/-1}
 .sheet.shot .eyebrow{margin-bottom:9px;font-size:9.5px}
 .sheet.shot .score-grid{grid-template-columns:118px 1fr;gap:18px}
 .sheet.shot .gauge,.sheet.shot .gauge svg{width:118px;height:118px}
@@ -267,14 +322,24 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
 .sheet.shot .arow{grid-template-columns:108px 1fr 52px}
 .sheet.shot .blk-types{align-self:stretch;display:flex;flex-direction:column}
 .sheet.shot .blk-types .types{flex:1}
-.sheet.shot .blk-types .tcard{display:flex;flex-direction:column;justify-content:center}
+.sheet.shot .blk-types .tcard{display:flex;flex-direction:column;justify-content:space-around}
 .sheet.shot .comment{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .sheet.shot .cseg{padding:10px 14px;border-bottom:1px solid var(--line)}
 .sheet.shot .cseg:nth-child(odd){border-right:1px solid var(--line)}
+.sheet.shot .comment .cseg:last-child:nth-child(odd){grid-column:1/-1;border-right:none}
 .sheet.shot .cseg .cbody{font-size:11.5px;line-height:1.6}
 .sheet.shot .sign{margin-top:8px}
 .sheet.shot .foot{padding:9px 0 0;margin-top:6px}
 .sheet.shot .edit-hint{display:none}
+/* PDF 1장 맞춤: 리포트를 A4 인쇄영역에 맞게 자동 축소 */
+.sheet.shot.pfit{width:710px!important;max-width:710px!important;padding:10px 14px!important}
+.sheet.shot.pfit{min-height:0!important}
+#sheet-fit{transform-origin:top left}
+@media print{
+  body.rfit .loader,body.rfit .actions,body.rfit #gen-overlay,body.rfit #key-setup{display:none!important}
+  body.rfit #sheet-fit{height:var(--pfith,auto);overflow:hidden}
+  body.rfit #sheet-fit .sheet.shot{zoom:var(--pscale,1)}
+}
 </style>
 </head>
 <body>
@@ -292,8 +357,11 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
   <div class="row">
     <button class="btn btn-go" id="go-btn" onclick="runPaste()">분석하기</button>
     <label class="btn btn-ghost" style="cursor:pointer">PDF 불러오기<input type="file" id="pdf-file" accept="application/pdf,.pdf" style="display:none" onchange="handlePdf(this.files[0]); this.value=''"></label>
-    <button class="btn btn-ghost" onclick="loadSample()">샘플 다시 보기 (조민준)</button>
-    <button class="btn btn-ghost" onclick="window.print()">PDF 출력</button>
+    <label class="btn btn-go" style="cursor:pointer">📸 채점답안 사진<input type="file" id="img-file" accept="image/*" multiple style="display:none" onchange="handleImages(this.files); this.value=''"></label>
+    <button class="btn btn-ghost" onclick="fillManual()">✍️ 직접 입력(종이시험)</button>
+    <select id="preset-sel" class="t-name" style="width:auto" title="채점 프리셋"><option value="">프리셋 없음(자동 판독)</option><option value="dg1">달곰한 Literacy 1 · Unit 01-12</option><option value="dg2">달곰한 Literacy 2 · Unit 01-12</option><option value="dg3">달곰한 Literacy 3 · Unit 01-12</option><option value="rt-s1-lv3">리딩튜터 주니어 스타터1 · 내용이해 Lv.3</option><option value="rt-s2-lv3">리딩튜터 주니어 스타터2 · 내용이해 Lv.3</option><option value="rt-s3-lv3">리딩튜터 주니어 스타터3 · 내용이해 Lv.3</option><option value="rt-j1-lv3">리딩튜터 주니어1 · 내용이해 Lv.3</option><option value="rt-j3-lv3">리딩튜터 주니어3 · 내용이해 Lv.3</option><option value="rt-j4-lv3">리딩튜터 주니어4 · 내용이해 Lv.3</option><option value="gi1-01">Grammar Inside 1권 · 총괄평가 01회</option><option value="gi1-02">Grammar Inside 1권 · 총괄평가 02회</option><option value="gi2-01">Grammar Inside 2권 · 총괄평가 01회</option><option value="gi2-02">Grammar Inside 2권 · 총괄평가 02회</option><option value="gi3-01">Grammar Inside 3권 · 총괄평가 01회</option><option value="gi3-02">Grammar Inside 3권 · 총괄평가 02회</option><option value="gi4-01">Grammar Inside 4권 · 총괄평가 01회</option><option value="gi4-02">Grammar Inside 4권 · 총괄평가 02회</option><option value="gi5-01">Grammar Inside 5권 · 총괄평가 01회</option><option value="gi5-02">Grammar Inside 5권 · 총괄평가 02회</option><option value="gi6-01">Grammar Inside 6권 · 총괄평가 01회</option><option value="gi6-02">Grammar Inside 6권 · 총괄평가 02회</option><option value="gis">Grammar Inside Starter · 총괄평가</option><option value="gil1">Grammar Inside Level 1 · 총괄평가</option><option value="gil2">Grammar Inside Level 2 · 총괄평가</option><option value="gil3">Grammar Inside Level 3 · 총괄평가</option></select>
+    <button class="btn btn-ghost" onclick="loadSample()">샘플 다시 보기</button>
+    <button class="btn btn-ghost" onclick="printReport()">PDF 출력 (A4 1장)</button>
     <button class="btn btn-ghost" onclick="exportJPG()">JPG로 저장</button>
   </div>
   <div class="note">※ 반드시 <b>‘상세 성적표’</b>를 사용하세요. ‘요약 성적표’에는 누적 성취도·문항별 데이터가 없어 회차 비교와 영역 분석이 되지 않습니다.</div>
@@ -308,45 +376,80 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
   </div>
   <div class="modesel">
     <span class="msl">AI 정밀 분석</span>
-    <input id="api-key" class="t-name" style="width:280px" type="password" placeholder="(선택) Anthropic API 키 — sk-ant-…" oninput="saveKey()">
-    <span class="msl-note">키를 넣으면 Claude가 PDF·붙여넣기 내용을 직접 읽어 정확히 변환합니다(없으면 내부 파서 사용).</span>
+    <input id="api-key" class="t-name" style="width:280px" type="password" placeholder="Anthropic API 키 — sk-ant-…" oninput="saveKey()">
+    <button class="btn btn-go" onclick="saveKey(true)">🔑 키 저장</button>
+    <button class="btn btn-ghost" onclick="clearKey()">지우기</button>
+    <span id="key-status" class="msl-note">키를 한 번 저장하면 이 브라우저(기기)에 남아 다시 입력할 필요가 없습니다.</span>
+  </div>
+  <div class="modesel">
+    <span class="msl">답안지 생성기</span>
+    <select id="gen-sel" class="t-name" style="width:auto"></select>
+    <button class="btn btn-go" onclick="openGenerator()">🖨️ 답안지 생성</button>
+    <span class="msl-note">선택한 시험의 <b>코드 박힌 답안지</b>를 만들어 인쇄합니다.</span>
+  </div>
+  <div class="modesel">
+    <span class="msl">채점 시험 선택</span>
+    <select id="code-sel" class="t-name" style="width:auto" onchange="pickByCode()"></select>
+    <span id="code-msg" class="msl-note">답안지 상단 코드와 같은 시험을 고르면 위 ‘채점 프리셋’이 자동 설정됩니다.</span>
   </div>
 </div>
 
 <!-- REPORT -->
-<div class="sheet" id="sheet"></div>
+<div id="sheet-fit"><div class="sheet" id="sheet"></div></div>
 
 <div class="actions no-print">
   <button class="btn btn-ghost" onclick="exportJPG()">JPG로 저장</button>
-  <button class="btn btn-go" onclick="window.print()">PDF 출력</button>
+  <button class="btn btn-go" onclick="printReport()">PDF 출력 (A4 1장)</button>
+</div>
+
+<!-- 최초 1회 API 키 설정 팝업 -->
+<div id="key-setup" class="no-print">
+  <div class="ks-card">
+    <h3>🔑 최초 설정 · API 키</h3>
+    <p>AI 사진 채점을 사용하려면 Anthropic API 키가 필요합니다.<br><b>한 번만 입력하면 이 기기(브라우저)에 저장되어 다시 묻지 않습니다.</b><br>키 없이도 내부 파서로 기본 변환·채점은 가능합니다.</p>
+    <input id="ks-input" type="password" placeholder="sk-ant-…" onkeydown="if(event.key==='Enter'){event.preventDefault();ksSave();}">
+    <div class="ks-row">
+      <button class="ks-skip" onclick="ksSkip()">지금은 건너뛰기 (내부 파서 사용)</button>
+      <button class="btn btn-go" onclick="ksSave()">저장하고 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- 답안지 생성기 오버레이 -->
+<div id="gen-overlay" class="no-print" style="display:none">
+  <div class="gen-bar no-print">
+    <button class="btn btn-go" onclick="printGenerator()">🖨️ 인쇄 / PDF</button>
+    <button class="btn btn-ghost" onclick="closeGenerator()">닫기</button>
+    <span class="gen-hint">A4 세로 · 인쇄 배율 100%(실제 크기)로 출력하세요.</span>
+  </div>
+  <div id="gen-sheet"></div>
 </div>
 
 <script>
-/* ===== sample (조민준 / 실제 링크 데이터) ===== */
+/* ===== sample (임제이 / 넷튜터 상세 성적표 실제 데이터) ===== */
 const SAMPLE={
-  name:"이라온", grade:"초등학교 6학년", date:"2026.05.28",
-  book:"초등 Grammar Inside 5", exam:"Chapter 01~04 (총괄)",
-  score:66, total:100, correct:27, qtotal:40, rate:68,
-  types:[{name:"객관식",total:30,correct:20},{name:"주관식",total:10,correct:7}],
+  name:"임제이", grade:"초등학교 5학년", date:"2026.07.08",
+  book:"초등 Grammar Inside 1", exam:"Chapter 01~04 (총괄)",
+  score:72, total:100, correct:31, qtotal:40, rate:78,
+  types:[{name:"객관식",total:30,correct:23},{name:"주관식",total:10,correct:8}],
   areas:[
-    {name:"형용사와 부사",total:10,correct:8},
-    {name:"명령문·제안문·감탄문",total:10,correct:6},
-    {name:"비교",total:10,correct:6},
-    {name:"접속사",total:10,correct:7}
+    {name:"관사",total:11,correct:10},
+    {name:"명사",total:10,correct:8},
+    {name:"be동사",total:9,correct:7},
+    {name:"대명사",total:10,correct:6}
   ],
   history:[
-    {round:"1회차",date:"2026.03.02",score:45},
-    {round:"2회차",date:"2026.05.28",score:66}
+    {round:"1회차",date:"2026.03.05",score:37,rate:38},
+    {round:"2회차",date:"2026.06.10",score:65,rate:70},
+    {round:"3회차",date:"2026.07.08",score:72,rate:78}
   ],
   weak:[
-    {item:"지시형용사와 수량형용사",page:"p.10"},
-    {item:"감탄문",page:"p.30"},
-    {item:"비교급",page:"p.56"},
-    {item:"감탄문",page:"p.32"},
-    {item:"최상급",page:"p.74"},
-    {item:"등위접속사",page:"p.94"},
-    {item:"명령문 and/or (접속사와 명령문)",page:"p.96"},
-    {item:"부사절 접속사",page:"p.110"}
+    {item:"셀 수 없는 명사",page:"p.24"},
+    {item:"인칭대명사",page:"p.74"},
+    {item:"주어에 따른 be동사",page:"p.112"},
+    {item:"be동사의 부정문과 의문문",page:"p.112"},
+    {item:"정관사 the",page:"p.48"},
+    {item:"비인칭주어 it",page:"p.90"}
   ]
 };
 
@@ -454,12 +557,13 @@ function parseNetutor(raw){
 
 /* ===== EPL 톤 코멘트 자동 생성 (사실 기반) ===== */
 /* 성취 등급 — 표시 방식(MODE)에 따라 A·B·C·D 또는 부족·보통·우수·최우수 */
-const BANDS={grade:['D','C','B','A'], level:['부족','보통','우수','최우수']};
+const BANDS={grade:['D','PASS','B','A'], level:['부족','보통','우수','최우수']};
 const TIERCOLOR=['var(--weak)','var(--warn)','var(--good)','var(--good)'];
 const TIERFILL=[40,60,80,100];
 function tier(rate){ if(rate>=90)return 3; if(rate>=80)return 2; if(rate>=70)return 1; return 0; }
 function band(rate){
-  const i=tier(rate), lab=(MODE==='level'?BANDS.level[i]:BANDS.grade[i]);
+  if(MODE==='grade'){ const p=rate>=70; return {t:p?'PASS':'FAIL', c:p?'var(--good)':'var(--weak)', gauge:p?'PASS':'FAIL'}; }
+  const i=tier(rate), lab=BANDS.level[i];
   return {t:lab, c:TIERCOLOR[i], gauge:lab};
 }
 
@@ -474,58 +578,53 @@ function buildComment(d,num){
   const cur=d.history[d.history.length-1]||{score:d.score};
   const gain=prev?cur.score-prev.score:null;
   const orate=d.qtotal?Math.round(d.correct/d.qtotal*100):(d.score??0);
-  const pass=orate>=80;
+  const pass=orate>=70;
   const nm=d.name||'학생';
   const wagwa=(w)=>{const ch=(w||'').slice(-1);const c=ch.charCodeAt(0);const bat=(c>=0xAC00&&c<=0xD7A3)?((c-0xAC00)%28!==0):/[a-zA-Z0-9]/.test(ch);return bat?'과':'와';};
   const join=(arr)=>{if(!arr.length)return'';if(arr.length<2)return arr[0];const pre=arr.slice(0,-1);return pre.join(', ')+wagwa(pre[pre.length-1])+' '+arr[arr.length-1];};
   const weakItems=[...new Set((d.weak||[]).map(w=>w.item))];
 
-  // ① 강점 — 선생님이 직접 관찰한 듯 자연스럽게
+  // ① 강점 — 데이터 기반, 전문 톤
   let s=[];
   const top=byRate[0];
   if(top){
-    if(top.rate===100) s.push(`${top.name}는 이번 시험에서 한 문제도 놓치지 않았습니다.`);
-    else if(top.rate>=80) s.push(`${top.name}는 대부분 정확하게 풀어냈습니다.`);
-    else s.push(`이번 시험에서는 ${top.name} 쪽이 그나마 가장 나았습니다.`);
+    if(top.rate===100) s.push(`${top.name} 영역은 출제된 문항을 모두 정확히 풀었습니다.`);
+    else if(top.rate>=80) s.push(`${top.name} 영역 정답률이 ${top.rate}%로 가장 높았습니다.`);
+    else s.push(`상대적으로 ${top.name} 영역(${top.rate}%)을 가장 잘 풀었습니다.`);
   }
-  const otherStrong=strongAreas.filter(a=>a!==top).map(a=>a.name);
-  if(otherStrong.length) s.push(`${join(otherStrong)}도 무리 없이 맞혔습니다.`);
-  if(sb&&sb.rate>=80) s.push(`특히 직접 문장을 쓰는 주관식에 강해서, 아는 내용을 문장으로 옮기는 힘이 보입니다.`);
-  else if(sb&&ob&&sb.rate>ob.rate) s.push(`객관식보다 주관식에서 더 정확한 점도 눈여겨볼 만합니다.`);
-  if(gain!=null&&gain>0){
-    if(gain>=20) s.push(`무엇보다 지난 회차보다 크게 올라왔습니다. 그동안의 노력이 점수로 이어지고 있어요.`);
-    else s.push(`지난 회차보다 조금씩 나아지고 있는 흐름도 반갑습니다.`);
-  }
-  if(!s.length) s.push(`이번 결과를 출발점으로 삼아 다음 학습 방향을 잡아보려 합니다.`);
+  const otherStrong=strongAreas.filter(a=>a!==top);
+  if(otherStrong.length) s.push(`${join(otherStrong.map(a=>a.name))} 영역도 ${otherStrong.map(a=>a.rate+'%').join('·')}로 기준선을 넘겼습니다.`);
+  if(sb&&sb.rate>=80) s.push(`주관식 정답률이 ${sb.rate}%로, 직접 문장을 구성하는 문항에서 정확도가 높았습니다.`);
+  else if(sb&&ob&&sb.rate>ob.rate) s.push(`주관식(${sb.rate}%)이 객관식(${ob.rate}%)보다 높았습니다.`);
+  if(!s.length) s.push(`이번 회차 전체 정답률은 ${orate}%입니다.`);
 
-  // ② 보완할 점 — 오답을 근거로, 사람 말투로
+  // ② 보완할 점 — 오답 데이터 진단 + 후속 학습 안내
   let c=[];
   const worst=weakAreas[0];
   if(worst){
-    let w;
-    if(worst.rate<50) w=`${worst.name}는 아직 많이 헷갈려 합니다`;
-    else if(worst.rate<70) w=`${worst.name}는 절반 정도만 맞혔습니다`;
-    else w=`${worst.name}는 무난했지만 실수가 몇 개 나왔습니다`;
-    s.length?c.push(`반면 ${w}.`):c.push(`${w}.`);
-    const otherWeak=weakAreas.slice(1).map(a=>a.name);
-    if(otherWeak.length) c.push(`${join(otherWeak)}도 함께 다잡아야 합니다.`);
+    const wrong=worst.total-worst.correct;
+    c.push(`${worst.name} 영역은 정답률 ${worst.rate}%로, ${worst.total}문항 중 ${wrong}문항을 틀렸습니다.`);
+    const otherWeak=weakAreas.slice(1).filter(a=>a.rate<70).map(a=>`${a.name} ${a.rate}%`);
+    if(otherWeak.length) c.push(`${otherWeak.join(', ')} 영역도 기준선을 밑돌았습니다.`);
   }
-  if(weakItems.length) c.push(`오답을 보면 ${join(weakItems.slice(0,4))}처럼 헷갈리기 쉬운 지점에서 주로 틀렸습니다.`);
-  if(ob&&sb&&ob.rate-sb.rate>=20) c.push(`아는 개념도 막상 직접 써 보라고 하면 놓치는 편이라, 문장으로 옮겨 쓰는 연습이 필요합니다.`);
-  else if(sb&&ob&&sb.rate-ob.rate>=20) c.push(`문항을 급하게 읽다 실수하는 경우가 보여, 끝까지 정확히 읽는 연습이 도움이 되겠습니다.`);
-  if(!pass) c.push(`이번 점수는 통과 기준(정답률 80%)에는 조금 못 미쳤습니다. 한 달간 워크북으로 이 부분을 다시 다진 뒤, 재시험을 거쳐 다음 단계로 넘어가겠습니다.`);
+  if(weakItems.length) c.push(`오답이 발생한 항목은 ${join(weakItems.slice(0,4))}입니다.`);
+  if(ob&&sb&&ob.rate-sb.rate>=20) c.push(`객관식(${ob.rate}%)과 주관식(${sb.rate}%)의 차이가 커, 개념을 직접 문장으로 쓰는 연습이 필요합니다.`);
+  else if(sb&&ob&&sb.rate-ob.rate>=20) c.push(`객관식(${ob.rate}%)이 주관식(${sb.rate}%)보다 낮아, 문항을 정확히 읽는 연습이 필요합니다.`);
+  if(!pass) c.push(`전체 정답률 ${orate}%로 통과 기준(70%)에 도달하지 못했습니다. 위 항목을 1개월간 워크북으로 학습한 뒤 재시험을 거쳐 다음 단계로 진입합니다.`);
+  else c.push(`전체 정답률 ${orate}%로 통과 기준(70%)을 충족했습니다. 부족한 부분은 별도 워크북 없이 워크시트 오답 정리로 보완하며 다음 단계로 진입합니다.`);
 
-  // ③ 학부모님께 — 친근하되 단호하게
+  // ③ 학부모님께 — 기준·후속 안내, 전문 톤
   let p=[];
-  p.push(`이번 결과는 ${d.book} ${d.exam} 범위를 기준으로 한 절대평가입니다.`);
-  p.push(`저희는 정답률 80% 이상(A·B)을 통과로 보고, 그 아래는 재학습 과정을 거칩니다.`);
+  p.push(`이번 결과는 ${d.book} ${d.exam} 범위의 절대평가입니다.`);
+  p.push(`정답률 70% 이상은 PASS, 그 미만은 FAIL입니다.`);
   if(!pass){
-    p.push(`${nm} 학생은 아직 교재 이해가 완전히 끝나지 않아, 한 달간 워크북으로 부족한 부분을 채운 뒤 재시험을 봅니다.`);
-    if(worst) p.push(`특히 ${worst.name} 영역을 중점적으로 보완하겠습니다.`);
-    p.push(`재시험을 통과하면 다음 단계 교재로 올라갑니다.`);
+    p.push(`${nm} 학생은 전체 정답률 ${orate}%로, 교재 이해가 완료되지 않았습니다.`);
+    if(worst) p.push(`${worst.name} 영역을 중점 보완 과제로, 1개월간 워크북 학습 후 재시험을 진행합니다.`);
+    p.push(`재시험 통과 시 다음 단계 교재로 진입합니다.`);
   }else{
-    p.push(`${nm} 학생은 통과 기준을 넘겨 다음 단계 교재로 올라갑니다.`);
-    if(worst) p.push(`다만 ${worst.name} 영역은 다음 단계에서도 계속 살피겠습니다.`);
+    p.push(`${nm} 학생은 전체 정답률 ${orate}%로 통과 기준을 충족하여 다음 단계 교재로 진입합니다.`);
+    if(worst) p.push(`${worst.name} 영역(${worst.rate}%)은 별도 워크북 없이 워크시트 오답 정리로 보완합니다.`);
+    p.push(`전반적으로 학습을 안정적으로 따라오고 있습니다.`);
   }
 
   return {strong:s.join('\n'),care:c.join('\n'),parent:p.join('\n')};
@@ -533,7 +632,7 @@ function buildComment(d,num){
 
 /* ===== render ===== */
 function render(d){
-  d.types=(d.types||[]).map(t=>({...t,rate:t.rate??Math.round(t.correct/t.total*100)}));
+  d.types=(d.types||[]).filter(t=>t&&t.name&&t.name!=='undefined'&&+t.total>0).map(t=>({...t,rate:t.rate??Math.round(t.correct/t.total*100)}));
   const areas=(d.areas||[]).map(a=>({...a,rate:Math.round(a.correct/a.total*100)}));
   const score=d.score??0, rate=d.rate??Math.round((d.correct/d.qtotal)*100||0);
   const NUM=(MODE==='num');
@@ -563,7 +662,7 @@ function render(d){
   </div>
 
   <div class="who">
-    <span class="name">${d.name||'학생'}</span>
+    <span class="name" contenteditable="true" title="클릭해 이름 수정">${d.name||'학생'}</span>
     <span class="grade">${d.grade||''}</span>
     <span class="meta"><b>${d.book||''}</b><br>${d.exam||''} · ${d.date||''}</span>
   </div>
@@ -587,8 +686,7 @@ function render(d){
         </div>
         <div class="facts">
           <div class="fact"><div class="l">${MODE==='grade'?'성취 등급':MODE==='level'?'성취 단계':'성취 수준'}</div><div class="v" style="color:${ov.c}"${NUM?'':' contenteditable="true"'}>${NUM?score+'<small>점</small>':ov.t}</div></div>
-          <div class="fact"><div class="l">진급 상태</div><div class="v" style="color:${rate>=80?'var(--good)':'var(--weak)'}">${rate>=80?'통과':'재학습'}</div></div>
-          <div class="fact"><div class="l">누적 응시</div><div class="v">${hist.length||1}<small>회</small></div></div>
+          <div class="fact"><div class="l">진급 상태</div><div class="v" style="color:${rate>=70?'var(--good)':'var(--weak)'}">${rate>=70?'PASS':'FAIL'}</div></div>
         </div>
       </div>
     </div>`;
@@ -599,9 +697,10 @@ function render(d){
       <div class="trend">`;
     hist.forEach((h,i)=>{
       const isNow=i===hist.length-1;
-      const hpPct=NUM?(h.score/mx):(TIERFILL[tier(h.score)]/100);
+      const hval=(h.rate!=null?h.rate:h.score);   // 정답률 우선 → 게이지와 기준 통일
+      const hpPct=NUM?(h.score/mx):(TIERFILL[tier(hval)]/100);
       const hp=Math.max(12,hpPct*58);
-      const hb=band(h.score);
+      const hb=band(hval);
       const lbl=(i===0?'교재 시작 전':isNow?'교재 마친 후':h.round);
       html+=`<div class="tcol">
         ${hist.length>1?`<button class="tdel no-print" onclick="removeRound(${i})" title="이 회차 제외">×</button>`:''}
@@ -615,20 +714,6 @@ function render(d){
     html+=`</div>`;
   }
 
-  // 문법 영역
-  if(areas.length){
-    html+=`<div class="block blk-area"><div class="eyebrow">문법 영역별 성취</div><div class="area">`;
-    areas.forEach(a=>{
-      const b=band(a.rate);
-      html+=`<div class="arow">
-        <div class="an">${a.name}</div>
-        <div class="track"><div class="fill" style="width:0;background:${b.c}" data-w="${NUM?a.rate:TIERFILL[tier(a.rate)]}"></div></div>
-        <div class="ap" style="color:${b.c}"${NUM?'':' contenteditable="true"'}>${NUM?a.rate+'%':b.t}</div>
-        <button class="ardel no-print" onclick="this.closest('.arow').remove()" title="이 영역 삭제">×</button></div>`;
-    });
-    html+=`</div></div>`;
-  }
-
   // 유형별
   if(d.types.length){
     html+=`<div class="block blk-types"><div class="eyebrow">유형별 성취</div><div class="types">`;
@@ -636,7 +721,21 @@ function render(d){
       const b=band(t.rate);
       html+=`<div class="tcard"><div class="tt">${t.name}</div>
         <div class="big" style="color:${b.c}"${NUM?'':' contenteditable="true"'}>${NUM?t.rate+'%':b.t}</div>
-        ${NUM?`<div class="sub">${t.correct} / ${t.total}문항 정답</div>`:''}</div>`;
+        ${t.total?`<div class="sub">${t.correct} / ${t.total}문항</div>`:''}</div>`;
+    });
+    html+=`</div></div>`;
+  }
+
+  // 문법 영역 (PASS/FAIL · 정답률 막대)
+  if(areas.length){
+    html+=`<div class="block blk-area"><div class="eyebrow">문법 영역별 성취</div><div class="area">`;
+    areas.forEach(a=>{
+      const pf=a.rate>=70, col=pf?'var(--good)':'var(--weak)';
+      html+=`<div class="arow">
+        <div class="an">${a.name}</div>
+        <div class="track"><div class="fill" style="width:0;background:${col}" data-w="${a.rate}"></div></div>
+        <div class="ap" style="color:${col}">${NUM?a.rate+'%':(pf?'PASS':'FAIL')}</div>
+        <button class="ardel no-print" onclick="this.closest('.arow').remove()" title="이 영역 삭제">×</button></div>`;
     });
     html+=`</div></div>`;
   }
@@ -645,8 +744,8 @@ function render(d){
   if(d.weak&&d.weak.length){
     const seen=new Set();
     const weak=d.weak.filter(w=>{const k=w.item+'|'+w.page;if(seen.has(k))return false;seen.add(k);return true;}).slice(0,6);
-    html+=`<div class="block blk-weak"><div class="eyebrow">우선 학습 항목</div><div class="weak">`;
-    weak.forEach(w=>{html+=`<div class="wi"><span>${w.item}</span><b>${w.page}</b></div>`;});
+    html+=`<div class="block blk-weak"><div class="eyebrow">우선 학습 항목 <span class="eyebrow-sub">문법 항목 · 교재 페이지</span></div><div class="weak">`;
+    weak.forEach(w=>{html+=`<div class="wi"><span>${w.item}</span><b>교재 ${w.page}</b></div>`;});
     html+=`</div></div>`;
   }
 
@@ -719,6 +818,12 @@ function preclean(text){
 async function runPaste(){
   const raw=document.getElementById('paste').value.trim();
   if(!raw){alert('상세 성적표 내용을 붙여넣거나, 링크 주소를 입력하세요.');return;}
+  if(/^\s*\[직접입력\]/.test(raw)){
+    const d=parseManual(raw);
+    if(_ok(d)){CURRENT=d;render(d);document.getElementById('sheet').scrollIntoView({behavior:'smooth'});}
+    else alert('입력을 읽지 못했습니다. 최소한 영역별 "정답/전체"(예: 어휘 5/6)를 채워주세요.');
+    return;
+  }
   if(/^https?:\/\//i.test(raw)){ await runLink(raw); return; }
   if(getKey()){
     const btn=document.getElementById('go-btn'); const lab=btn?btn.textContent:'';
@@ -802,11 +907,412 @@ function removeRound(i){
   CURRENT.history=CURRENT.history.filter((_,idx)=>idx!==i);
   render(CURRENT);
 }
+function addPrevRound(){
+  const lbl=(document.getElementById('pv-label')||{}).value||'1차';
+  const dt=((document.getElementById('pv-date')||{}).value||'').trim();
+  const raw=(document.getElementById('pv-score')||{}).value;
+  const sc=parseInt(raw,10);
+  if(isNaN(sc)||sc<0||sc>100){ alert('이전 회차 정답률(%)을 0~100 숫자로 입력하세요.'); return; }
+  if(!CURRENT.history) CURRENT.history=[];
+  // 현재(재시험) 결과가 아직 이력에 없으면 최신 회차로 편입
+  if(!CURRENT.history.length){
+    const now=(CURRENT.score!=null?CURRENT.score:0);
+    CURRENT.history.push({round:'재시험', date:CURRENT.date||'', score:now, rate:now});
+  }
+  // 이전 회차를 맨 앞에 삽입 (전 → 후)
+  CURRENT.history.unshift({round:lbl.trim()||'1차', date:dt, score:sc, rate:sc});
+  render(CURRENT);
+}
+function clearRounds(){ CURRENT.history=[]; render(CURRENT); }
 function loadSample(){CURRENT=SAMPLE;render(SAMPLE);}
 
+/* ===== 직접 입력(종이시험) ===== */
+function fillManual(){
+  const tpl=`[직접입력]
+이름: 
+학년: 초등 3학년
+교재: 달곰한 Literacy 1
+시험: Unit 07-12 Final Test
+날짜: 2026.06.10
+영역: 어휘 /6
+영역: 독해 /9
+유형: 객관식 /10
+유형: 주관식 /5
+누적: 1회차 2026.03.15 
+누적: 2회차 2026.06.10 
+약점: 
+약점: `;
+  const ta=document.getElementById('paste');
+  ta.value=tpl; ta.focus();
+  alert('종이시험 직접 입력 서식을 넣었습니다.\n\n· 영역: 이름 뒤에 "정답/전체"로 입력 (예: 어휘 5/6)\n· 유형(객관식·주관식)은 선택 — 안 쓰면 지워도 됩니다\n· 누적: 회차 날짜 뒤에 정답률(%) 숫자 (예: 2회차 2026.06.10 78)\n· 약점: "항목 - 페이지" (예: 빈칸 추론 - p.24)\n\n다 채운 뒤 [분석하기]를 누르세요.');
+}
+
+function parseManual(raw){
+  const d={types:[],areas:[],history:[],weak:[]};
+  raw.split('\n').forEach(line=>{
+    let m;
+    if(m=line.match(/^\s*이름[:：]\s*(.+)/)) d.name=m[1].trim();
+    else if(m=line.match(/^\s*학년[:：]\s*(.+)/)) d.grade=m[1].trim();
+    else if(m=line.match(/^\s*교재[:：]\s*(.+)/)) d.book=m[1].trim();
+    else if(m=line.match(/^\s*시험[:：]\s*(.+)/)) d.exam=m[1].trim();
+    else if(m=line.match(/^\s*날짜[:：]\s*(.+)/)) d.date=m[1].trim();
+    else if(m=line.match(/^\s*전체[:：]\s*(\d+)\s*\/\s*(\d+)/)){ d.correct=+m[1]; d.qtotal=+m[2]; }
+    else if(m=line.match(/^\s*영역[:：]\s*(.+?)\s+(\d+)\s*\/\s*(\d+)\s*$/)) d.areas.push({name:m[1].trim(),correct:+m[2],total:+m[3]});
+    else if(m=line.match(/^\s*유형[:：]\s*(객관식|주관식)\s+(\d+)\s*\/\s*(\d+)/)){ const c=+m[2],t=+m[3]; if(t>0) d.types.push({name:m[1],correct:c,total:t,rate:Math.round(c/t*100)}); }
+    else if(m=line.match(/^\s*누적[:：]\s*(\S+)\s+(\S+)\s+(\d+)\s*%?\s*$/)){ const rt=+m[3]; d.history.push({round:m[1],date:m[2],score:rt,rate:rt}); }
+    else if(m=line.match(/^\s*약점[:：]\s*(.+)/)){ const t=m[1].trim(); if(!t) return; const p=t.match(/^(.*?)\s*[-–—]\s*(p?\.?\s*\d+\S*)\s*$/); if(p) d.weak.push({item:p[1].trim(),page:p[2].replace(/\s+/g,'')}); else d.weak.push({item:t,page:''}); }
+  });
+  // 전체 미입력 시 영역 합으로 계산
+  if(d.qtotal==null && d.areas.length){ d.correct=d.areas.reduce((s,a)=>s+a.correct,0); d.qtotal=d.areas.reduce((s,a)=>s+a.total,0); }
+  if(d.qtotal){ d.score=Math.round(d.correct/d.qtotal*100); d.total=100; }
+  return d;
+}
+
 /* ===== AI 정밀 분석 (Anthropic API) ===== */
-function saveKey(){ try{const k=document.getElementById('api-key').value.trim();localStorage.setItem('epl_api_key',k);}catch(e){} }
+function refreshKeyStatus(){
+  const st=document.getElementById('key-status'); if(!st) return;
+  let saved=''; try{saved=localStorage.getItem('epl_api_key')||'';}catch(e){}
+  const cur=(document.getElementById('api-key')||{}).value||'';
+  if(saved){ st.innerHTML='✅ 키가 이 브라우저에 <b>저장됨</b> — 다시 입력할 필요 없습니다. (…'+saved.slice(-4)+')'; st.style.color='var(--good)'; }
+  else if(cur){ st.innerHTML='아직 저장 전입니다. <b>[🔑 키 저장]</b>을 누르세요.'; st.style.color='var(--ink-soft)'; }
+  else { st.innerHTML='키를 한 번 저장하면 이 브라우저(기기)에 남아 다시 입력할 필요가 없습니다.'; st.style.color='var(--muted)'; }
+}
+function saveKey(announce){
+  let ok=false;
+  try{const k=document.getElementById('api-key').value.trim();localStorage.setItem('epl_api_key',k);ok=true;}catch(e){}
+  if(announce){
+    const st=document.getElementById('key-status');
+    if(ok){ refreshKeyStatus(); }
+    else if(st){ st.innerHTML='⚠️ 이 화면에서는 저장이 제한됩니다. 파일을 <b>내려받아 브라우저에서 직접 열면</b> 저장됩니다.'; st.style.color='var(--weak)'; }
+  } else { refreshKeyStatus(); }
+}
+function clearKey(){
+  try{localStorage.removeItem('epl_api_key');}catch(e){}
+  const el=document.getElementById('api-key'); if(el) el.value='';
+  refreshKeyStatus();
+}
+/* 최초 1회 API 키 설정 팝업 */
+function ksSave(){
+  const v=(document.getElementById('ks-input').value||'').trim();
+  try{ if(v) localStorage.setItem('epl_api_key',v); localStorage.setItem('epl_key_setup_done','1'); }catch(e){}
+  const el=document.getElementById('api-key'); if(el&&v) el.value=v;
+  document.getElementById('key-setup').style.display='none';
+  refreshKeyStatus();
+}
+function ksSkip(){
+  try{ localStorage.setItem('epl_key_setup_done','1'); }catch(e){}
+  document.getElementById('key-setup').style.display='none';
+}
+function maybeShowKeySetup(){
+  let saved='',done=''; try{saved=localStorage.getItem('epl_api_key')||'';done=localStorage.getItem('epl_key_setup_done')||'';}catch(e){}
+  if(!saved && !done){
+    const box=document.getElementById('key-setup'); if(box){ box.style.display='flex';
+      const i=document.getElementById('ks-input'); if(i) setTimeout(()=>i.focus(),120); }
+  }
+}
 function getKey(){ const el=document.getElementById('api-key'); let k=el?el.value.trim():''; if(!k){try{k=localStorage.getItem('epl_api_key')||'';if(k&&el)el.value=k;}catch(e){}} return k; }
+
+/* 📸 채점답안 사진 → Claude Vision 자동 채점·분류 → 성적표 */
+function _readImg(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const s=r.result.split(',');res({media:(file.type||'image/jpeg'),data:s[1]});};r.onerror=rej;r.readAsDataURL(file);});}
+
+function _extractJSON(raw){
+  let t=(raw||'').replace(/```json|```/g,'').trim();
+  let a=t.indexOf('{'), b=t.lastIndexOf('}');
+  if(a>=0&&b>a){ try{ return JSON.parse(t.slice(a,b+1)); }catch(_){} }
+  const t2='{'+t; const b2=t2.lastIndexOf('}');   // prefill로 여는 중괄호가 빠진 경우
+  if(b2>0){ return JSON.parse(t2.slice(0,b2+1)); }
+  return JSON.parse(t);
+}
+
+/* ===== 교재 프리셋 (정답표 내장) — 학생 답만 읽어 자동 채점 ===== */
+const PRESETS={
+  "dg1":{book:"달곰한 Literacy 1", exam:"Unit 01-12 Test", q:[
+    {n:1,area:"어휘",type:"객관식",ans:"④"},{n:2,area:"어휘",type:"객관식",ans:"②"},
+    {n:3,area:"어휘",type:"주관식",ans:"traditional"},{n:4,area:"어휘",type:"주관식",ans:"without"},
+    {n:5,area:"어휘",type:"주관식",ans:"homework"},{n:6,area:"어휘",type:"주관식",ans:"happen"},
+    {n:7,area:"독해-어법·배열",type:"객관식",ans:"①"},{n:8,area:"독해-어법·배열",type:"주관식",ans:"People put beans into a jar"},
+    {n:9,area:"독해-추론",type:"객관식",ans:"②"},{n:10,area:"독해-추론",type:"객관식",ans:"②"},
+    {n:11,area:"독해-어법·배열",type:"객관식",ans:"①"},{n:12,area:"독해-추론",type:"객관식",ans:"②"},
+    {n:13,area:"독해-사실확인",type:"주관식",ans:"양치기들 상인들"},{n:14,area:"독해-어법·배열",type:"객관식",ans:"②"},
+    {n:15,area:"독해-추론",type:"객관식",ans:"③"},
+    {n:16,area:"어휘",type:"객관식",ans:"④"},{n:17,area:"어휘",type:"객관식",ans:"③"},
+    {n:18,area:"어휘",type:"주관식",ans:"easily"},{n:19,area:"어휘",type:"주관식",ans:"bother"},
+    {n:20,area:"어휘",type:"주관식",ans:"past"},{n:21,area:"어휘",type:"주관식",ans:"excite"},
+    {n:22,area:"독해-어법·배열",type:"주관식",ans:"under their pillows"},{n:23,area:"독해-사실확인",type:"객관식",ans:"③"},
+    {n:24,area:"독해-추론",type:"객관식",ans:"②"},{n:25,area:"독해-어법·배열",type:"객관식",ans:"②"},
+    {n:26,area:"독해-어법·배열",type:"주관식",ans:"A rare thing will become expensive"},{n:27,area:"독해-추론",type:"객관식",ans:"②"},
+    {n:28,area:"독해-사실확인",type:"객관식",ans:"①"},{n:29,area:"독해-추론",type:"객관식",ans:"③"},
+    {n:30,area:"독해-사실확인",type:"주관식",ans:"아인슈타인 오바마"}
+  ]},
+  "dg2":{book:"달곰한 Literacy 2", exam:"Unit 01-12 Test", q:[
+    {n:1,area:"어휘",type:"객관식",ans:"⑤"},{n:2,area:"어휘",type:"객관식",ans:"④"},
+    {n:3,area:"어휘",type:"주관식",ans:"save"},{n:4,area:"어휘",type:"주관식",ans:"through"},
+    {n:5,area:"어휘",type:"주관식",ans:"thinly"},{n:6,area:"어휘",type:"주관식",ans:"turn into"},
+    {n:7,area:"독해-어법·배열",type:"객관식",ans:"③"},{n:8,area:"독해-사실확인",type:"객관식",ans:"②"},
+    {n:9,area:"독해-추론",type:"객관식",ans:"③"},{n:10,area:"독해-추론",type:"객관식",ans:"①"},
+    {n:11,area:"독해-어법·배열",type:"객관식",ans:"②"},{n:12,area:"독해-사실확인",type:"주관식",ans:"F T"},
+    {n:13,area:"독해-사실확인",type:"객관식",ans:"③"},{n:14,area:"독해-추론",type:"객관식",ans:"①"},
+    {n:15,area:"독해-사실확인",type:"객관식",ans:"③"},
+    {n:16,area:"어휘",type:"객관식",ans:"②"},{n:17,area:"어휘",type:"객관식",ans:"⑤"},
+    {n:18,area:"어휘",type:"주관식",ans:"protect"},{n:19,area:"어휘",type:"주관식",ans:"poor"},
+    {n:20,area:"어휘",type:"주관식",ans:"ground"},{n:21,area:"어휘",type:"주관식",ans:"at the same time"},
+    {n:22,area:"독해-추론",type:"객관식",ans:"③"},{n:23,area:"독해-어법·배열",type:"주관식",ans:"don't eat fruit off the floor"},
+    {n:24,area:"독해-사실확인",type:"객관식",ans:"②"},{n:25,area:"독해-어법·배열",type:"객관식",ans:"②"},
+    {n:26,area:"독해-추론",type:"객관식",ans:"①"},{n:27,area:"독해-추론",type:"객관식",ans:"③"},
+    {n:28,area:"독해-추론",type:"객관식",ans:"③"},{n:29,area:"독해-추론",type:"객관식",ans:"①"},
+    {n:30,area:"독해-사실확인",type:"객관식",ans:"③"}
+  ]},
+  "dg3":{book:"달곰한 Literacy 3", exam:"Unit 01-12 Test", q:[
+    {n:1,area:"어휘",type:"객관식",ans:"④"},{n:2,area:"어휘",type:"객관식",ans:"⑤"},
+    {n:3,area:"어휘",type:"주관식",ans:"welcome to"},{n:4,area:"어휘",type:"주관식",ans:"differently"},
+    {n:5,area:"어휘",type:"주관식",ans:"tax"},{n:6,area:"어휘",type:"주관식",ans:"bedtime"},
+    {n:7,area:"독해-어법·배열",type:"객관식",ans:"②"},{n:8,area:"독해-어법·배열",type:"주관식",ans:"His tears turned into these Chocolate Hills"},
+    {n:9,area:"독해-사실확인",type:"객관식",ans:"②"},{n:10,area:"독해-어법·배열",type:"객관식",ans:"①"},
+    {n:11,area:"독해-추론",type:"객관식",ans:"③"},{n:12,area:"독해-사실확인",type:"주관식",ans:"T F"},
+    {n:13,area:"독해-추론",type:"객관식",ans:"②"},{n:14,area:"독해-사실확인",type:"주관식",ans:"메탄 소들"},
+    {n:15,area:"독해-사실확인",type:"객관식",ans:"②"},
+    {n:16,area:"어휘",type:"객관식",ans:"①"},{n:17,area:"어휘",type:"객관식",ans:"⑤"},
+    {n:18,area:"어휘",type:"주관식",ans:"along"},{n:19,area:"어휘",type:"주관식",ans:"stuck"},
+    {n:20,area:"어휘",type:"주관식",ans:"company"},{n:21,area:"어휘",type:"주관식",ans:"beat"},
+    {n:22,area:"독해-어법·배열",type:"주관식",ans:"Anyone can do it"},{n:23,area:"독해-어법·배열",type:"객관식",ans:"③"},
+    {n:24,area:"독해-추론",type:"객관식",ans:"②"},{n:25,area:"독해-추론",type:"객관식",ans:"①"},
+    {n:26,area:"독해-어법·배열",type:"객관식",ans:"②"},{n:27,area:"독해-추론",type:"객관식",ans:"③"},
+    {n:28,area:"독해-사실확인",type:"객관식",ans:"②"},{n:29,area:"독해-추론",type:"객관식",ans:"③"},
+    {n:30,area:"독해-어법·배열",type:"주관식",ans:"traditional young"}
+  ]},
+  "rt-s1-lv3":{book:"리딩튜터 주니어 스타터1", exam:"내용 이해 Lv.3", q:[
+    {n:1,area:"대의파악",type:"객관식",ans:"⑤"},{n:2,area:"세부내용",type:"객관식",ans:"③"},
+    {n:3,area:"대의파악",type:"객관식",ans:"①"},{n:4,area:"대의파악",type:"객관식",ans:"④"},
+    {n:5,area:"대의파악",type:"객관식",ans:"②"},{n:6,area:"글의구조",type:"객관식",ans:"②"},
+    {n:7,area:"추론·문맥",type:"객관식",ans:"①"},{n:8,area:"추론·문맥",type:"객관식",ans:"④"},
+    {n:9,area:"글의구조",type:"객관식",ans:"⑤"},{n:10,area:"어휘",type:"객관식",ans:"③"},
+    {n:11,area:"추론·문맥",type:"객관식",ans:"②"},{n:12,area:"어휘",type:"객관식",ans:"①"},
+    {n:13,area:"세부내용",type:"객관식",ans:"④"},{n:14,area:"대의파악",type:"객관식",ans:"③"},
+    {n:15,area:"추론·문맥",type:"객관식",ans:"⑤"},{n:16,area:"대의파악",type:"객관식",ans:"①"},
+    {n:17,area:"대의파악",type:"객관식",ans:"②"},{n:18,area:"글의구조",type:"객관식",ans:"④"},
+    {n:19,area:"추론·문맥",type:"객관식",ans:"⑤"},{n:20,area:"대의파악",type:"객관식",ans:"③"}
+  ]},
+  "rt-s2-lv3":{book:"리딩튜터 주니어 스타터2", exam:"내용 이해 Lv.3", q:[
+    {n:1,area:"대의파악",type:"객관식",ans:"⑤"},{n:2,area:"글의구조",type:"객관식",ans:"②"},
+    {n:3,area:"세부내용",type:"객관식",ans:"②"},{n:4,area:"어휘",type:"객관식",ans:"①"},
+    {n:5,area:"대의파악",type:"객관식",ans:"④"},{n:6,area:"대의파악",type:"객관식",ans:"①"},
+    {n:7,area:"대의파악",type:"객관식",ans:"⑤"},{n:8,area:"추론·문맥",type:"객관식",ans:"②"},
+    {n:9,area:"대의파악",type:"객관식",ans:"④"},{n:10,area:"추론·문맥",type:"객관식",ans:"③"},
+    {n:11,area:"글의구조",type:"객관식",ans:"②"},{n:12,area:"추론·문맥",type:"객관식",ans:"①"},
+    {n:13,area:"세부내용",type:"객관식",ans:"⑤"},{n:14,area:"대의파악",type:"객관식",ans:"③"},
+    {n:15,area:"대의파악",type:"객관식",ans:"④"},{n:16,area:"추론·문맥",type:"객관식",ans:"②"},
+    {n:17,area:"세부내용",type:"객관식",ans:"①"},{n:18,area:"글의구조",type:"객관식",ans:"②"},
+    {n:19,area:"추론·문맥",type:"객관식",ans:"④"},{n:20,area:"어휘",type:"객관식",ans:"⑤"}
+  ]},
+  "rt-s3-lv3":{book:"리딩튜터 주니어 스타터3", exam:"내용 이해 Lv.3", q:[
+    {n:1,area:"대의파악",type:"객관식",ans:"②"},{n:2,area:"세부내용",type:"객관식",ans:"④"},
+    {n:3,area:"대의파악",type:"객관식",ans:"⑤"},{n:4,area:"대의파악",type:"객관식",ans:"①"},
+    {n:5,area:"글의구조",type:"객관식",ans:"②"},{n:6,area:"추론·문맥",type:"객관식",ans:"③"},
+    {n:7,area:"대의파악",type:"객관식",ans:"①"},{n:8,area:"세부내용",type:"객관식",ans:"③"},
+    {n:9,area:"글의구조",type:"객관식",ans:"④"},{n:10,area:"추론·문맥",type:"객관식",ans:"②"},
+    {n:11,area:"추론·문맥",type:"객관식",ans:"⑤"},{n:12,area:"어휘",type:"객관식",ans:"③"},
+    {n:13,area:"추론·문맥",type:"객관식",ans:"①"},{n:14,area:"추론·문맥",type:"객관식",ans:"②"},
+    {n:15,area:"대의파악",type:"객관식",ans:"⑤"},{n:16,area:"대의파악",type:"객관식",ans:"①"},
+    {n:17,area:"글의구조",type:"객관식",ans:"③"},{n:18,area:"대의파악",type:"객관식",ans:"②"},
+    {n:19,area:"어휘",type:"객관식",ans:"③"},{n:20,area:"어휘",type:"객관식",ans:"⑤"}
+  ]},
+  "rt-j1-lv3":{book:"리딩튜터 주니어1", exam:"내용 이해 Lv.3", q:[
+    {n:1,area:"세부내용",type:"객관식",ans:"④"},{n:2,area:"대의파악",type:"객관식",ans:"②"},
+    {n:3,area:"글의구조",type:"객관식",ans:"④"},{n:4,area:"추론·문맥",type:"객관식",ans:"②"},
+    {n:5,area:"어휘",type:"객관식",ans:"⑤"},{n:6,area:"추론·문맥",type:"객관식",ans:"①"},
+    {n:7,area:"추론·문맥",type:"객관식",ans:"②"},{n:8,area:"어휘",type:"객관식",ans:"①"},
+    {n:9,area:"세부내용",type:"객관식",ans:"③"},{n:10,area:"대의파악",type:"객관식",ans:"②"},
+    {n:11,area:"추론·문맥",type:"객관식",ans:"⑤"},{n:12,area:"글의구조",type:"객관식",ans:"④"},
+    {n:13,area:"추론·문맥",type:"객관식",ans:"③"},{n:14,area:"대의파악",type:"객관식",ans:"①"},
+    {n:15,area:"대의파악",type:"객관식",ans:"④"},{n:16,area:"글의구조",type:"객관식",ans:"②"},
+    {n:17,area:"추론·문맥",type:"객관식",ans:"③"},{n:18,area:"어휘",type:"객관식",ans:"⑤"},
+    {n:19,area:"대의파악",type:"객관식",ans:"④"},{n:20,area:"어휘",type:"객관식",ans:"①"}
+  ]},
+  "rt-j3-lv3":{book:"리딩튜터 주니어3", exam:"내용 이해 Lv.3", q:[
+    {n:1,area:"대의파악",type:"객관식",ans:"②"},{n:2,area:"글의구조",type:"객관식",ans:"③"},
+    {n:3,area:"세부내용",type:"객관식",ans:"⑤"},{n:4,area:"어휘",type:"객관식",ans:"③"},
+    {n:5,area:"추론·문맥",type:"객관식",ans:"①"},{n:6,area:"추론·문맥",type:"객관식",ans:"②"},
+    {n:7,area:"추론·문맥",type:"객관식",ans:"④"},{n:8,area:"대의파악",type:"객관식",ans:"③"},
+    {n:9,area:"대의파악",type:"객관식",ans:"⑤"},{n:10,area:"대의파악",type:"객관식",ans:"①"},
+    {n:11,area:"추론·문맥",type:"객관식",ans:"①"},{n:12,area:"글의구조",type:"객관식",ans:"④"},
+    {n:13,area:"추론·문맥",type:"객관식",ans:"⑤"},{n:14,area:"세부내용",type:"객관식",ans:"②"},
+    {n:15,area:"추론·문맥",type:"객관식",ans:"③"},{n:16,area:"글의구조",type:"객관식",ans:"⑤"},
+    {n:17,area:"대의파악",type:"객관식",ans:"④"},{n:18,area:"글의구조",type:"객관식",ans:"③"},
+    {n:19,area:"어휘",type:"객관식",ans:"⑤"},{n:20,area:"대의파악",type:"객관식",ans:"①"}
+  ]},
+  "rt-j4-lv3":{book:"리딩튜터 주니어4", exam:"내용 이해 Lv.3", q:[
+    {n:1,area:"대의파악",type:"객관식",ans:"②"},{n:2,area:"세부내용",type:"객관식",ans:"④"},
+    {n:3,area:"대의파악",type:"객관식",ans:"⑤"},{n:4,area:"대의파악",type:"객관식",ans:"③"},
+    {n:5,area:"글의구조",type:"객관식",ans:"⑤"},{n:6,area:"어휘",type:"객관식",ans:"⑤"},
+    {n:7,area:"추론·문맥",type:"객관식",ans:"①"},{n:8,area:"어휘",type:"객관식",ans:"③"},
+    {n:9,area:"글의구조",type:"객관식",ans:"③"},{n:10,area:"글의구조",type:"객관식",ans:"②"},
+    {n:11,area:"대의파악",type:"객관식",ans:"④"},{n:12,area:"추론·문맥",type:"객관식",ans:"①"},
+    {n:13,area:"대의파악",type:"객관식",ans:"②"},{n:14,area:"세부내용",type:"객관식",ans:"④"},
+    {n:15,area:"대의파악",type:"객관식",ans:"③"},{n:16,area:"대의파악",type:"객관식",ans:"①"},
+    {n:17,area:"세부내용",type:"객관식",ans:"④"},{n:18,area:"글의구조",type:"객관식",ans:"③"},
+    {n:19,area:"어휘",type:"객관식",ans:"④"},{n:20,area:"추론·문맥",type:"객관식",ans:"⑤"}
+  ]},
+  "gi1-01":{book:"Grammar Inside 1권", exam:"총괄평가 01회", q:[
+    {n:1,area:"명사",type:"객관식",ans:"④"},{n:2,area:"대명사",type:"객관식",ans:"②"},
+    {n:3,area:"be동사",type:"객관식",ans:"③"},{n:4,area:"명사",type:"객관식",ans:"⑤"},
+    {n:5,area:"관사",type:"객관식",ans:"②"},{n:6,area:"대명사",type:"객관식",ans:"④"},
+    {n:7,area:"대명사",type:"객관식",ans:"③"},{n:8,area:"관사",type:"객관식",ans:"①"},
+    {n:9,area:"명사",type:"객관식",ans:"④"},{n:10,area:"대명사",type:"객관식",ans:"①"},
+    {n:11,area:"명사",type:"객관식",ans:"③"},{n:12,area:"대명사",type:"객관식",ans:"②"},
+    {n:13,area:"be동사",type:"객관식",ans:"③"},{n:14,area:"관사",type:"객관식",ans:"③"},
+    {n:15,area:"관사",type:"객관식",ans:"⑤"},{n:16,area:"대명사",type:"주관식",ans:"day it"},
+    {n:17,area:"관사",type:"주관식",ans:"in the park"},{n:18,area:"관사",type:"주관식",ans:"We have dinner at seven"},
+    {n:19,area:"be동사",type:"주관식",ans:"Are those your glasses"},{n:20,area:"명사",type:"주관식",ans:"cups of coffee"}
+  ]},
+  "gi1-02":{book:"Grammar Inside 1권", exam:"총괄평가 02회", q:[
+    {n:1,area:"대명사",type:"객관식",ans:"②"},{n:2,area:"관사",type:"객관식",ans:"①"},
+    {n:3,area:"be동사",type:"객관식",ans:"②"},{n:4,area:"대명사",type:"객관식",ans:"③"},
+    {n:5,area:"관사",type:"객관식",ans:"③"},{n:6,area:"대명사",type:"객관식",ans:"④"},
+    {n:7,area:"명사",type:"객관식",ans:"②"},{n:8,area:"be동사",type:"객관식",ans:"③"},
+    {n:9,area:"관사",type:"객관식",ans:"④"},{n:10,area:"be동사",type:"객관식",ans:"③"},
+    {n:11,area:"be동사",type:"객관식",ans:"④"},{n:12,area:"대명사",type:"객관식",ans:"③"},
+    {n:13,area:"대명사",type:"객관식",ans:"③"},{n:14,area:"be동사",type:"객관식",ans:"⑤"},
+    {n:15,area:"명사",type:"객관식",ans:"③"},{n:16,area:"명사",type:"주관식",ans:"a bowl of salad"},
+    {n:17,area:"대명사",type:"주관식",ans:"hers"},{n:18,area:"be동사",type:"주관식",ans:"Is"},
+    {n:19,area:"be동사",type:"주관식",ans:"How far is it from here"},{n:20,area:"be동사",type:"주관식",ans:"These are not fresh vegetables"}
+  ]},
+  "gi2-01":{book:"Grammar Inside 2권", exam:"총괄평가 01회", q:[
+    {n:1,area:"일반동사",type:"객관식",ans:"⑤"},{n:2,area:"일반동사",type:"객관식",ans:"②"},{n:3,area:"There구문",type:"객관식",ans:"⑤"},{n:4,area:"일반동사",type:"객관식",ans:"③"},{n:5,area:"일반동사",type:"객관식",ans:"③"},{n:6,area:"일반동사",type:"객관식",ans:"③"},{n:7,area:"There구문",type:"객관식",ans:"④"},{n:8,area:"be동사",type:"객관식",ans:"②"},{n:9,area:"일반동사",type:"객관식",ans:"②"},{n:10,area:"be동사",type:"객관식",ans:"⑤"},{n:11,area:"일반동사",type:"객관식",ans:"①"},{n:12,area:"be동사",type:"객관식",ans:"③"},{n:13,area:"There구문",type:"객관식",ans:"②"},{n:14,area:"일반동사",type:"객관식",ans:"④"},{n:15,area:"일반동사",type:"객관식",ans:"③"},{n:16,area:"be동사",type:"주관식",ans:"weren't were"},{n:17,area:"일반동사",type:"주관식",ans:"dries"},{n:18,area:"일반동사",type:"주관식",ans:"does"},{n:19,area:"There구문",type:"주관식",ans:"Were there many trees on the street"},{n:20,area:"일반동사",type:"주관식",ans:"She does not like sad music"}
+  ]},
+  "gi2-02":{book:"Grammar Inside 2권", exam:"총괄평가 02회", q:[
+    {n:1,area:"일반동사",type:"객관식",ans:"③"},{n:2,area:"be동사",type:"객관식",ans:"④"},{n:3,area:"There구문",type:"객관식",ans:"②"},{n:4,area:"일반동사",type:"객관식",ans:"②"},{n:5,area:"일반동사",type:"객관식",ans:"⑤"},{n:6,area:"There구문",type:"객관식",ans:"③"},{n:7,area:"일반동사",type:"객관식",ans:"②"},{n:8,area:"be동사",type:"객관식",ans:"②"},{n:9,area:"일반동사",type:"객관식",ans:"④"},{n:10,area:"There구문",type:"객관식",ans:"④"},{n:11,area:"There구문",type:"객관식",ans:"③"},{n:12,area:"일반동사",type:"객관식",ans:"①"},{n:13,area:"There구문",type:"객관식",ans:"④"},{n:14,area:"일반동사",type:"객관식",ans:"①"},{n:15,area:"일반동사",type:"객관식",ans:"③"},{n:16,area:"일반동사",type:"주관식",ans:"My cat doesn't have a long tail"},{n:17,area:"There구문",type:"주관식",ans:"Were there many goats on the farm"},{n:18,area:"일반동사",type:"주관식",ans:"She knows my name"},{n:19,area:"There구문",type:"주관식",ans:"There is"},{n:20,area:"일반동사",type:"주관식",ans:"doesn't"}
+  ]},
+  "gi3-01":{book:"Grammar Inside 3권", exam:"총괄평가 01회", q:[
+    {n:1,area:"명령문·제안",type:"객관식",ans:"⑤"},{n:2,area:"조동사",type:"객관식",ans:"④"},{n:3,area:"과거시제",type:"객관식",ans:"③"},{n:4,area:"조동사",type:"객관식",ans:"②"},{n:5,area:"명령문·제안",type:"객관식",ans:"④"},{n:6,area:"과거시제",type:"객관식",ans:"①"},{n:7,area:"조동사",type:"객관식",ans:"④"},{n:8,area:"과거시제",type:"객관식",ans:"③"},{n:9,area:"명령문·제안",type:"객관식",ans:"⑤"},{n:10,area:"조동사",type:"객관식",ans:"②"},{n:11,area:"명령문·제안",type:"객관식",ans:"④"},{n:12,area:"명령문·제안",type:"객관식",ans:"③"},{n:13,area:"과거시제",type:"객관식",ans:"③"},{n:14,area:"과거시제",type:"객관식",ans:"④"},{n:15,area:"과거시제",type:"객관식",ans:"⑤"},{n:16,area:"명령문·제안",type:"주관식",ans:"Don't listen to music loudly"},{n:17,area:"과거시제",type:"주관식",ans:"works started"},{n:18,area:"조동사",type:"주관식",ans:"We don't have to wait for James"},{n:19,area:"명령문·제안",type:"주관식",ans:"Let's not give up hope"},{n:20,area:"조동사",type:"주관식",ans:"Are you able to solve this problem"}
+  ]},
+  "gi3-02":{book:"Grammar Inside 3권", exam:"총괄평가 02회", q:[
+    {n:1,area:"과거시제",type:"객관식",ans:"③"},{n:2,area:"과거시제",type:"객관식",ans:"⑤"},{n:3,area:"과거시제",type:"객관식",ans:"⑤"},{n:4,area:"명령문·제안",type:"객관식",ans:"③"},{n:5,area:"조동사",type:"객관식",ans:"②"},{n:6,area:"명령문·제안",type:"객관식",ans:"②"},{n:7,area:"조동사",type:"객관식",ans:"②"},{n:8,area:"과거시제",type:"객관식",ans:"④"},{n:9,area:"명령문·제안",type:"객관식",ans:"③"},{n:10,area:"조동사",type:"객관식",ans:"②"},{n:11,area:"과거시제",type:"객관식",ans:"③"},{n:12,area:"명령문·제안",type:"객관식",ans:"④"},{n:13,area:"조동사",type:"객관식",ans:"⑤"},{n:14,area:"조동사",type:"객관식",ans:"②"},{n:15,area:"명령문·제안",type:"객관식",ans:"⑤"},{n:16,area:"과거시제",type:"주관식",ans:"Did the milk smell bad it did"},{n:17,area:"명령문·제안",type:"주관식",ans:"Why don't we buy a new car"},{n:18,area:"과거시제",type:"주관식",ans:"He didn't wash the dishes"},{n:19,area:"조동사",type:"주관식",ans:"has to"},{n:20,area:"명령문·제안",type:"주관식",ans:"Don't be rude to your parents"}
+  ]},
+  "gi4-01":{book:"Grammar Inside 4권", exam:"총괄평가 01회", q:[
+    {n:1,area:"시제",type:"객관식",ans:"⑤"},{n:2,area:"시제",type:"객관식",ans:"⑤"},{n:3,area:"의문사",type:"객관식",ans:"①"},{n:4,area:"형용사·부사",type:"객관식",ans:"④"},{n:5,area:"시제",type:"객관식",ans:"④"},{n:6,area:"형용사·부사",type:"객관식",ans:"④"},{n:7,area:"형용사·부사",type:"객관식",ans:"②"},{n:8,area:"시제",type:"객관식",ans:"④"},{n:9,area:"형용사·부사",type:"객관식",ans:"③"},{n:10,area:"형용사·부사",type:"객관식",ans:"③"},{n:11,area:"형용사·부사",type:"객관식",ans:"③"},{n:12,area:"의문사",type:"객관식",ans:"④"},{n:13,area:"의문사",type:"객관식",ans:"④"},{n:14,area:"빈도부사·부정",type:"객관식",ans:"②"},{n:15,area:"빈도부사·부정",type:"객관식",ans:"①"},{n:16,area:"시제",type:"주관식",ans:"isn't going to go"},{n:17,area:"시제",type:"주관식",ans:"Dora was sitting on the bench"},{n:18,area:"형용사·부사",type:"주관식",ans:"well"},{n:19,area:"빈도부사·부정",type:"주관식",ans:"I will never forget you"},{n:20,area:"시제",type:"주관식",ans:"Where are you living"}
+  ]},
+  "gi4-02":{book:"Grammar Inside 4권", exam:"총괄평가 02회", q:[
+    {n:1,area:"의문사",type:"객관식",ans:"①"},{n:2,area:"시제",type:"객관식",ans:"①"},{n:3,area:"의문사",type:"객관식",ans:"⑤"},{n:4,area:"시제",type:"객관식",ans:"②"},{n:5,area:"시제",type:"객관식",ans:"①"},{n:6,area:"형용사·부사",type:"객관식",ans:"⑤"},{n:7,area:"시제",type:"객관식",ans:"①"},{n:8,area:"시제",type:"객관식",ans:"④"},{n:9,area:"시제",type:"객관식",ans:"④"},{n:10,area:"형용사·부사",type:"객관식",ans:"②"},{n:11,area:"시제",type:"객관식",ans:"③"},{n:12,area:"형용사·부사",type:"객관식",ans:"③"},{n:13,area:"시제",type:"객관식",ans:"⑤"},{n:14,area:"의문사",type:"객관식",ans:"③"},{n:15,area:"빈도부사·부정",type:"객관식",ans:"⑤"},{n:16,area:"형용사·부사",type:"주관식",ans:"fast"},{n:17,area:"시제",type:"주관식",ans:"Is he going to travel to Europe"},{n:18,area:"시제",type:"주관식",ans:"practicing"},{n:19,area:"빈도부사·부정",type:"주관식",ans:"I usually go shopping on Saturdays"},{n:20,area:"시제",type:"주관식",ans:"I went to bed late"}
+  ]},
+  "gi5-01":{book:"Grammar Inside 5권", exam:"총괄평가 01회", q:[
+    {n:1,area:"대명사·수량",type:"객관식",ans:"④"},{n:2,area:"대명사·수량",type:"객관식",ans:"④"},{n:3,area:"대명사·수량",type:"객관식",ans:"②"},{n:4,area:"대명사·수량",type:"객관식",ans:"③"},{n:5,area:"감탄문",type:"객관식",ans:"①"},{n:6,area:"대명사·수량",type:"객관식",ans:"⑤"},{n:7,area:"대명사·수량",type:"객관식",ans:"②"},{n:8,area:"감탄문",type:"객관식",ans:"③"},{n:9,area:"대명사·수량",type:"객관식",ans:"④"},{n:10,area:"대명사·수량",type:"객관식",ans:"③"},{n:11,area:"감탄문",type:"객관식",ans:"④"},{n:12,area:"비교",type:"객관식",ans:"⑤"},{n:13,area:"감탄문",type:"객관식",ans:"⑤"},{n:14,area:"비교",type:"객관식",ans:"③"},{n:15,area:"접속사",type:"객관식",ans:"③"},{n:16,area:"접속사",type:"주관식",ans:"because"},{n:17,area:"비교",type:"주관식",ans:"better than"},{n:18,area:"접속사",type:"주관식",ans:"Work hard and you'll succeed"},{n:19,area:"접속사",type:"주관식",ans:"It was hot so I opened the door"},{n:20,area:"비교",type:"주관식",ans:"fastest"}
+  ]},
+  "gi5-02":{book:"Grammar Inside 5권", exam:"총괄평가 02회", q:[
+    {n:1,area:"대명사·수량",type:"객관식",ans:"②"},{n:2,area:"대명사·수량",type:"객관식",ans:"①"},{n:3,area:"대명사·수량",type:"객관식",ans:"③"},{n:4,area:"대명사·수량",type:"객관식",ans:"⑤"},{n:5,area:"감탄문",type:"객관식",ans:"②"},{n:6,area:"대명사·수량",type:"객관식",ans:"④"},{n:7,area:"대명사·수량",type:"객관식",ans:"③"},{n:8,area:"감탄문",type:"객관식",ans:"③"},{n:9,area:"감탄문",type:"객관식",ans:"②"},{n:10,area:"비교",type:"객관식",ans:"①"},{n:11,area:"비교",type:"객관식",ans:"③"},{n:12,area:"비교",type:"객관식",ans:"④"},{n:13,area:"접속사",type:"객관식",ans:"②"},{n:14,area:"접속사",type:"객관식",ans:"③"},{n:15,area:"비교",type:"객관식",ans:"⑤"},{n:16,area:"접속사",type:"주관식",ans:"if it"},{n:17,area:"접속사",type:"주관식",ans:"go"},{n:18,area:"접속사",type:"주관식",ans:"Be careful or you'll get hurt"},{n:19,area:"접속사",type:"주관식",ans:"I'm tall but my sister isn't"},{n:20,area:"비교",type:"주관식",ans:"largest"}
+  ]},
+  "gi6-01":{book:"Grammar Inside 6권", exam:"총괄평가 01회", q:[
+    {n:1,area:"부정사·동명사",type:"객관식",ans:"③"},{n:2,area:"부정사·동명사",type:"객관식",ans:"①"},{n:3,area:"부정사·동명사",type:"객관식",ans:"③"},{n:4,area:"부정사·동명사",type:"객관식",ans:"⑤"},{n:5,area:"부정사·동명사",type:"객관식",ans:"②"},{n:6,area:"부정사·동명사",type:"객관식",ans:"④"},{n:7,area:"부정사·동명사",type:"객관식",ans:"⑤"},{n:8,area:"전치사",type:"객관식",ans:"③"},{n:9,area:"전치사",type:"객관식",ans:"②"},{n:10,area:"전치사",type:"객관식",ans:"①"},{n:11,area:"전치사",type:"객관식",ans:"③"},{n:12,area:"형용사·부사",type:"객관식",ans:"③"},{n:13,area:"문장형식",type:"객관식",ans:"②"},{n:14,area:"문장형식",type:"객관식",ans:"③"},{n:15,area:"문장형식",type:"객관식",ans:"⑤"},{n:16,area:"전치사",type:"주관식",ans:"about"},{n:17,area:"문장형식",type:"주관식",ans:"famous"},{n:18,area:"형용사·부사",type:"주관식",ans:"It was windy last night"},{n:19,area:"문장형식",type:"주관식",ans:"I want to paint my room blue"},{n:20,area:"부정사·동명사",type:"주관식",ans:"playing"}
+  ]},
+  "gi6-02":{book:"Grammar Inside 6권", exam:"총괄평가 02회", q:[
+    {n:1,area:"형용사·부사",type:"객관식",ans:"②"},{n:2,area:"문장형식",type:"객관식",ans:"②"},{n:3,area:"문장형식",type:"객관식",ans:"②"},{n:4,area:"부정사·동명사",type:"객관식",ans:"⑤"},{n:5,area:"부정사·동명사",type:"객관식",ans:"③"},{n:6,area:"부정사·동명사",type:"객관식",ans:"③"},{n:7,area:"부정사·동명사",type:"객관식",ans:"⑤"},{n:8,area:"전치사",type:"객관식",ans:"④"},{n:9,area:"전치사",type:"객관식",ans:"①"},{n:10,area:"전치사",type:"객관식",ans:"②"},{n:11,area:"전치사",type:"객관식",ans:"④"},{n:12,area:"부정사·동명사",type:"객관식",ans:"⑤"},{n:13,area:"부정사·동명사",type:"객관식",ans:"③"},{n:14,area:"부정사·동명사",type:"객관식",ans:"③"},{n:15,area:"문장형식",type:"객관식",ans:"④"},{n:16,area:"전치사",type:"주관식",ans:"until"},{n:17,area:"문장형식",type:"주관식",ans:"sad"},{n:18,area:"문장형식",type:"주관식",ans:"Time proved them wrong"},{n:19,area:"전치사",type:"주관식",ans:"Sunlight comes in through the hole"},{n:20,area:"부정사·동명사",type:"주관식",ans:"to hurt"}
+  ]},
+  "gis":{book:"Grammar Inside Starter", exam:"총괄평가", q:[
+    {n:1,area:"명사·관사",type:"객관식",ans:"④"},{n:2,area:"명사·관사",type:"객관식",ans:"④"},{n:3,area:"대명사",type:"객관식",ans:"③"},{n:4,area:"be동사",type:"객관식",ans:"②"},{n:5,area:"일반동사",type:"객관식",ans:"⑤"},{n:6,area:"형용사·부사",type:"객관식",ans:"②"},{n:7,area:"전치사",type:"객관식",ans:"①"},{n:8,area:"동사의종류",type:"객관식",ans:"③"},{n:9,area:"조동사",type:"객관식",ans:"⑤"},{n:10,area:"일반동사",type:"객관식",ans:"④"},{n:11,area:"비교",type:"객관식",ans:"⑤"},{n:12,area:"to부정사",type:"객관식",ans:"①"},{n:13,area:"접속사",type:"객관식",ans:"③"},{n:14,area:"의문·명령·감탄",type:"객관식",ans:"②"},{n:15,area:"대명사",type:"주관식",ans:"It is cold"},{n:16,area:"be동사",type:"주관식",ans:"Was he in Italy"},{n:17,area:"일반동사",type:"주관식",ans:"Robert does not work"},{n:18,area:"전치사",type:"주관식",ans:"The painting is next to the window"},{n:19,area:"동사의종류",type:"주관식",ans:"made called"},{n:20,area:"조동사",type:"주관식",ans:"doesn't have to take"},{n:21,area:"일반동사",type:"주관식",ans:"it won't"},{n:22,area:"비교",type:"주관식",ans:"bigger than"},{n:23,area:"to부정사",type:"주관식",ans:"It"},{n:24,area:"접속사",type:"주관식",ans:"and"},{n:25,area:"의문·명령·감탄",type:"주관식",ans:"will she"}
+  ]},
+  "gil1":{book:"Grammar Inside Level 1", exam:"총괄평가", q:[
+    {n:1,area:"be동사",type:"객관식",ans:"⑤"},{n:2,area:"일반동사",type:"객관식",ans:"④"},{n:3,area:"조동사",type:"객관식",ans:"①"},{n:4,area:"진행·미래시제",type:"객관식",ans:"③"},{n:5,area:"동사의종류",type:"객관식",ans:"③"},{n:6,area:"명사·관사",type:"객관식",ans:"⑤"},{n:7,area:"대명사",type:"객관식",ans:"②"},{n:8,area:"형용사·부사",type:"객관식",ans:"④"},{n:9,area:"부정사·동명사",type:"객관식",ans:"③"},{n:10,area:"전치사",type:"객관식",ans:"②"},{n:11,area:"접속사",type:"객관식",ans:"②"},{n:12,area:"의문·명령·감탄",type:"객관식",ans:"③"},{n:13,area:"의문·명령·감탄",type:"객관식",ans:"①"},{n:14,area:"be동사",type:"주관식",ans:"Are Molly and her brother basketball fans"},{n:15,area:"일반동사",type:"주관식",ans:"goes to the library studies English"},{n:16,area:"조동사",type:"주관식",ans:"don't have to buy"},{n:17,area:"진행·미래시제",type:"주관식",ans:"They are not going to go fishing"},{n:18,area:"동사의종류",type:"주관식",ans:"gave this watch to me"},{n:19,area:"명사·관사",type:"주관식",ans:"pieces of bread glass of juice"},{n:20,area:"대명사",type:"주관식",ans:"myself"},{n:21,area:"형용사·부사",type:"주관식",ans:"cheaper than more expensive than the most expensive"},{n:22,area:"부정사·동명사",type:"주관식",ans:"cleaning the garden to finish to find a secret room"},{n:23,area:"전치사",type:"주관식",ans:"on in at"},{n:24,area:"접속사",type:"주관식",ans:"until the bus comes"},{n:25,area:"의문·명령·감탄",type:"주관식",ans:"What a lovely name you have"}
+  ]},
+  "gil2":{book:"Grammar Inside Level 2", exam:"총괄평가", q:[
+    {n:1,area:"여러가지동사",type:"객관식",ans:"③"},{n:2,area:"시제",type:"객관식",ans:"②"},{n:3,area:"조동사",type:"객관식",ans:"②"},{n:4,area:"to부정사",type:"객관식",ans:"⑤"},{n:5,area:"동명사",type:"객관식",ans:"⑤"},{n:6,area:"분사",type:"객관식",ans:"④"},{n:7,area:"수동태",type:"객관식",ans:"④"},{n:8,area:"대명사",type:"객관식",ans:"④"},{n:9,area:"비교",type:"객관식",ans:"①"},{n:10,area:"접속사",type:"객관식",ans:"③"},{n:11,area:"관계사",type:"객관식",ans:"⑤"},{n:12,area:"가정법",type:"객관식",ans:"①"},{n:13,area:"여러가지동사",type:"주관식",ans:"knock knocking to wash to take"},{n:14,area:"시제",type:"주관식",ans:"opened is wearing"},{n:15,area:"조동사",type:"주관식",ans:"can go is not able to drive"},{n:16,area:"to부정사",type:"주관식",ans:"too difficult for me to understand"},{n:17,area:"동명사",type:"주관식",ans:"On arriving home I fell"},{n:18,area:"분사",type:"주관식",ans:"Feeling thirsty"},{n:19,area:"수동태",type:"주관식",ans:"is looked up to by Sophia"},{n:20,area:"대명사",type:"주관식",ans:"some"},{n:21,area:"비교",type:"주관식",ans:"older than"},{n:22,area:"접속사",type:"주관식",ans:"and"},{n:23,area:"관계사",type:"주관식",ans:"This is the park where I used to walk I don't know the reason why he was sad yesterday"},{n:24,area:"가정법",type:"주관식",ans:"she had gone on the trip with us"},{n:25,area:"일치와화법",type:"주관식",ans:"told me that he had met Jessica on the street"}
+  ]},
+  "gil3":{book:"Grammar Inside Level 3", exam:"총괄평가", q:[
+    {n:1,area:"시제",type:"객관식",ans:"④"},{n:2,area:"조동사",type:"객관식",ans:"⑤"},{n:3,area:"수동태",type:"객관식",ans:"④"},{n:4,area:"부정사",type:"객관식",ans:"②"},{n:5,area:"동명사",type:"객관식",ans:"③"},{n:6,area:"분사",type:"객관식",ans:"④"},{n:7,area:"비교",type:"객관식",ans:"①"},{n:8,area:"비교",type:"객관식",ans:"⑤"},{n:9,area:"접속사",type:"객관식",ans:"⑤"},{n:10,area:"관계사",type:"객관식",ans:"③"},{n:11,area:"가정법",type:"객관식",ans:"②"},{n:12,area:"일치와화법",type:"객관식",ans:"③"},{n:13,area:"기타구문",type:"객관식",ans:"②"},{n:14,area:"시제",type:"주관식",ans:"have been playing"},{n:15,area:"조동사",type:"주관식",ans:"We shouldn't have laughed at her mistake"},{n:16,area:"수동태",type:"주관식",ans:"is important for children to learn table manners"},{n:17,area:"부정사",type:"주관식",ans:"All answers must be written"},{n:18,area:"동명사",type:"주관식",ans:"to turn off skating"},{n:19,area:"분사",type:"주관식",ans:"Not having enough time"},{n:20,area:"비교",type:"주관식",ans:"The more the healthier"},{n:21,area:"접속사",type:"주관식",ans:"not only but also Unless"},{n:22,area:"관계사",type:"주관식",ans:"I found a little bird whose wing was hurt He didn't tell us the reason why he was angry"},{n:23,area:"가정법",type:"주관식",ans:"weren't wouldn't stay had booked wouldn't have waited"},{n:24,area:"일치와화법",type:"주관식",ans:"told me that she wanted to take a walk with me asked me if I had any hobbies"},{n:25,area:"기타구문",type:"주관식",ans:"It was yesterday that Matthew sent me this card"}
+  ]}
+};
+function _circle(s){s=(s||'').toString();const m={'①':'1','②':'2','③':'3','④':'4','⑤':'5'};for(const k in m)if(s.includes(k))return m[k];const d=s.match(/[1-5]/);return d?d[0]:'';}
+function _norm(s){return (s||'').toString().toLowerCase().replace(/[^a-z0-9가-힣]/g,'');}
+function _textOk(stu,ans){
+  const a=_norm(stu), b=_norm(ans); if(!a)return false; if(a===b)return true;
+  const at=(stu||'').toLowerCase().split(/[^a-z0-9가-힣]+/).filter(Boolean);
+  const bt=(ans||'').toLowerCase().split(/[^a-z0-9가-힣]+/).filter(Boolean);
+  if(bt.length>=2){const hit=bt.filter(t=>at.includes(t)).length;return hit/bt.length>=0.7;}
+  return b.length>3 && a.includes(b);
+}
+function gradeAgainstPreset(preset,answers){
+  const byN={}; (answers||[]).forEach(a=>byN[a.n]=a.student);
+  const A={},T={},weak=[]; let correct=0;
+  preset.q.forEach(q=>{
+    const stu=(byN[q.n]!=null?byN[q.n]:'').toString();
+    const ok = q.type==='객관식' ? (_circle(stu)!==''&&_circle(stu)===_circle(q.ans)) : _textOk(stu,q.ans);
+    A[q.area]=A[q.area]||{name:q.area,total:0,correct:0}; A[q.area].total++;
+    T[q.type]=T[q.type]||{name:q.type,total:0,correct:0}; T[q.type].total++;
+    if(ok){correct++;A[q.area].correct++;T[q.type].correct++;}
+    else weak.push({item:`${q.n}번 · ${q.area}`,page:''});
+  });
+  return {areas:Object.values(A),types:Object.values(T),weak,correct,qtotal:preset.q.length};
+}
+async function aiReadAnswers(files,preset){
+  const key=getKey(); if(!key) throw new Error('먼저 "AI 정밀 분석" 칸에 API 키를 입력하세요.');
+  const imgs=[]; for(const f of files) imgs.push(await _readImg(f));
+  const qlist=preset.q.map(q=>`${q.n}번(${q.type})`).join(', ');
+  const prompt='너는 채점된 영어 시험 답안지에서 학생이 고른/쓴 답만 읽는 판독기다. 정오 판단은 절대 하지 말고, 학생의 답 그대로 읽어라.\n'+
+  '- 객관식: 학생이 고른 번호를 ①②③④⑤ 중 하나로. 연필로 동그라미 친 것이 학생 답이다. 빨간펜(체크·큰 원·빗금)은 교사 채점 표시이니 학생 답으로 착각하지 말 것.\n'+
+  '- 주관식/빈칸: 학생이 손으로 쓴 영어 또는 한글을 그대로 읽어라(철자 그대로).\n'+
+  '- 학생이 비운 문항은 빈 문자열.\n'+
+  '- 여러 장이면 한 학생의 연속 페이지다. 모든 문항을 읽어라.\n'+
+  '- 상단 "이름" 칸의 한글 손글씨를 특히 주의 깊게 읽어라. 성+이름 2~4글자 한글로만, 존재하는 자연스러운 한국 이름으로 판독한다(예: 이라온, 임제이). 획을 헷갈리기 쉬우니 가장 그럴듯한 실제 이름으로 확정하고, 도저히 못 읽으면 name은 빈 문자열로 둔다.\n'+
+  '- 날짜도 읽어라.\n'+
+  '읽을 문항: '+qlist+'\n'+
+  'JSON만 출력(설명·코드펜스 금지): {"name":"","date":"","answers":[{"n":1,"student":""}]}';
+  const content=[{type:'text',text:prompt}]; imgs.forEach(im=>content.push({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
+  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content}]})});
+  if(!res.ok){let msg='';try{const e=await res.json();msg=(e&&e.error&&e.error.message)||'';}catch(_){}throw new Error('API '+res.status+(msg?' — '+msg:''));}
+  const data=await res.json();
+  return _extractJSON((data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(''));
+}
+
+async function aiParseImages(files){
+  const key=getKey(); if(!key) throw new Error('먼저 "AI 정밀 분석" 칸에 API 키를 입력하세요.');
+  const imgs=[]; for(const f of files) imgs.push(await _readImg(f));
+  const prompt='너는 영어 시험지의 채점된 답안지 사진을 읽어 EPL 성적표 데이터로 변환하는 채점 분석기다. 여러 장이면 한 학생의 연속된 페이지이니, 모든 페이지의 모든 문항을 빠짐없이 읽어라. JSON만 출력하라(설명·코드펜스 금지).\n\n'+
+'판독 규칙:\n'+
+'- 모든 문항의 정오를 판정한다. 빨간색 체크(V)·동그라미·빗금·큰 원은 교사의 채점 흔적이다. 학생이 실제 고른/쓴 답과 정답을 비교해 정오를 결정한다. 틀린 표시가 있으면 오답으로 본다. 문항 하나도 빠뜨리지 말 것(예: 15문항이면 15개 모두).\n'+
+'- areas: 문항을 실제 평가 능력별로 세분화한다. 예) 어휘(단어 뜻), 어휘·표현(빈칸 채우기), 독해-내용이해(일치/불일치), 독해-추론(대답할 수 없는 질문 등), 독해-어법·배열(순서배열·문장위치·영작). 시험 성격에 맞게 3~5개 영역으로 나누고, 독해 문항을 빠뜨리지 말 것. 각 영역 {name,total,correct}.\n'+
+'- 뭉뚱그리지 말 것. "어휘"와 "빈칸" 둘로만 끝내지 말고 독해 영역을 반드시 포함해 세분화한다.\n'+
+'- types: 객관식/주관식으로 명확히 나눌 수 있으면 {name,total,correct,rate}로 넣고, 애매하면 빈 배열([])로 둔다. 절대 name을 비우거나 undefined로 넣지 말 것.\n'+
+'- 상단의 이름(한글 손글씨 포함)·학년·교재명(예: 달곰한 Literacy 1)·시험명(예: Unit 01-06 Midterm Test)·날짜를 읽는다. 이름이 안 보이면 name은 빈 문자열.\n'+
+'- correct=전체 정답 수, qtotal=전체 문항 수(모든 페이지 합계). score=정답률(%).\n'+
+'- weak: 틀린 문항의 능력을 한국어로 구체적으로 {item,page}(페이지 모르면 page는 빈 문자열). 예: {"item":"내용 일치 추론","page":""}\n'+
+'- 등급(A/B/C/D)은 넣지 말 것(도구가 정답률로 계산).\n\n'+
+'JSON 스키마:\n{"name":"","grade":"","date":"","book":"","exam":"","score":0,"total":100,"correct":0,"qtotal":0,"types":[],"areas":[{"name":"","total":0,"correct":0}],"history":[],"weak":[{"item":"","page":""}]}';
+  const content=[{type:'text',text:prompt}];
+  imgs.forEach(im=>content.push({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2500,messages:[{role:'user',content}]})
+  });
+  if(!res.ok){let msg='';try{const e=await res.json();msg=(e&&e.error&&e.error.message)||'';}catch(_){}throw new Error('API '+res.status+(msg?' — '+msg:''));}
+  const data=await res.json();
+  const t=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+  return _extractJSON(t);
+}
+
+async function handleImages(files){
+  if(!files||!files.length)return;
+  const btn=document.getElementById('go-btn'); const label=btn?btn.textContent:'';
+  const presetKey=(document.getElementById('preset-sel')||{}).value||'';
+  if(btn){btn.disabled=true;btn.textContent=`사진 채점 중… (${files.length}장)`;}
+  try{
+    if(presetKey && PRESETS[presetKey]){
+      const preset=PRESETS[presetKey];
+      const read=await aiReadAnswers(files,preset);
+      const g=gradeAgainstPreset(preset,read.answers||[]);
+      const d={name:(read.name||'').trim(), grade:'', date:(read.date||'').trim(),
+        book:preset.book, exam:preset.exam,
+        correct:g.correct, qtotal:g.qtotal, score:Math.round(g.correct/g.qtotal*100), total:100,
+        areas:g.areas, types:g.types, weak:g.weak, history:[]};
+      CURRENT=d; render(d); document.getElementById('sheet').scrollIntoView({behavior:'smooth'});
+    } else {
+      const d=await aiParseImages(files);
+      if(d && (d.areas&&d.areas.length || d.qtotal)){
+        if(d.qtotal && d.correct!=null) d.score=Math.round(d.correct/d.qtotal*100);
+        CURRENT=d; render(d); document.getElementById('sheet').scrollIntoView({behavior:'smooth'});
+      } else alert('사진에서 채점 결과를 읽지 못했습니다. 문항 번호와 채점 표시가 선명하게 보이도록 다시 촬영해 주세요.');
+    }
+  }catch(e){ alert('사진 분석 실패: '+e.message); }
+  if(btn){btn.disabled=false;btn.textContent=label||'분석하기';}
+}
 
 async function aiParse(text){
   const key=getKey(); if(!key) return null;
@@ -830,8 +1336,8 @@ async function aiParse(text){
     throw new Error('API '+res.status+(msg?' — '+msg:' — 키/크레딧을 확인하세요.'));
   }
   const data=await res.json();
-  let t=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();
-  return JSON.parse(t);
+  const t=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+  return _extractJSON(t);
 }
 
 /* PDF 불러오기 — 인터넷 연결 없이 항상 작동 */
@@ -914,9 +1420,117 @@ async function exportJPG(){
   a.click();
 }
 
+/* ===== 답안지 생성기 + 코드 자동 매칭 ===== */
+function codeOf(key){return 'EPL-'+key.toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function _codeNorm(s){return (s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function findPresetByCode(input){
+  let t=_codeNorm(input); if(!t) return '';
+  if(!t.startsWith('EPL')) t='EPL'+t;            // 접두어 없이 입력해도 매칭
+  for(const k in PRESETS){ if(_codeNorm(codeOf(k))===t) return k; }
+  return '';
+}
+function pickByCode(){
+  const sel=document.getElementById('code-sel'); const msg=document.getElementById('code-msg');
+  const k=sel?sel.value:''; if(!k){ if(msg){msg.innerHTML='답안지 상단 코드와 같은 시험을 고르면 위 ‘채점 프리셋’이 자동 설정됩니다.';msg.style.color='var(--muted)';} return; }
+  const ps=document.getElementById('preset-sel'); if(ps) ps.value=k;
+  if(msg){ msg.innerHTML='✅ <b>'+PRESETS[k].book+' · '+PRESETS[k].exam+'</b> · 코드 <b>'+codeOf(k)+'</b> — 채점 프리셋 설정 완료.'; msg.style.color='var(--good)'; }
+}
+function fillCodeSel(){
+  const sel=document.getElementById('code-sel'); if(!sel) return;
+  sel.innerHTML='<option value="">— 시험을 선택하세요 —</option>'+
+    Object.keys(PRESETS).map(k=>`<option value="${k}">${PRESETS[k].book} · ${PRESETS[k].exam}  (${codeOf(k)})</option>`).join('');
+}
+function fillGenSel(){
+  const sel=document.getElementById('gen-sel'); if(!sel) return;
+  sel.innerHTML=Object.keys(PRESETS).map(k=>`<option value="${k}">${PRESETS[k].book} · ${PRESETS[k].exam}  (${codeOf(k)})</option>`).join('');
+}
+function buildAnswerSheet(key){
+  const p=PRESETS[key]; const code=codeOf(key);
+  const rows=p.q.map(q=>{
+    const isObj=q.type==='객관식';
+    const body=isObj
+      ? `<div class="as-bub">${[1,2,3,4,5].map(i=>`<span class="b">${i}</span>`).join('')}</div>`
+      : `<div class="as-write"></div>`;
+    return `<div class="as-q"><span class="qn">${q.n}</span><span class="qt">${isObj?'객관식':'주관식'}</span>${body}</div>`;
+  }).join('');
+  return `
+    <div class="as-head">
+      <div class="as-brand">
+        <div class="wm">EPL</div><div class="tag">Empower · Practice · Literacy</div>
+        <div class="exam">${p.exam}</div><div class="book">${p.book}</div>
+      </div>
+      <div class="as-code">
+        <div class="qr" id="as-qr"></div>
+        <div class="ctxt">${code}</div><div class="clab">SCORING CODE</div>
+      </div>
+    </div>
+    <div class="as-who">
+      <div class="f"><b>이름</b><span class="ln"></span></div>
+      <div class="f"><b>날짜</b><span class="ln"></span></div>
+      <div class="f"><b>점수</b><span class="ln"></span></div>
+    </div>
+    <div class="as-note">※ 객관식은 해당 번호에 ○ 표시, 주관식은 빈칸에 답을 쓰세요. 상단 코드는 채점용이니 지우지 마세요.</div>
+    <div class="as-grid">${rows}</div>`;
+}
+function openGenerator(){
+  const key=(document.getElementById('gen-sel')||{}).value||''; if(!key||!PRESETS[key]) return;
+  document.getElementById('gen-sheet').innerHTML=buildAnswerSheet(key);
+  document.getElementById('gen-overlay').style.display='block';
+  document.body.classList.add('gen-open');
+  try{
+    if(window.QRCode){ const box=document.getElementById('as-qr'); box.innerHTML='';
+      new QRCode(box,{text:codeOf(key),width:92,height:92,correctLevel:QRCode.CorrectLevel.M}); }
+  }catch(e){}
+  window.scrollTo(0,0);
+}
+function closeGenerator(){ document.getElementById('gen-overlay').style.display='none'; document.body.classList.remove('gen-open'); }
+function printGenerator(){ window.print(); }
+
+/* 리포트를 A4 한 장에 맞춰 인쇄 (짧으면 행 간격을 벌려 채우고, 길면 축소) */
+function printReport(){
+  const sheet=document.getElementById('sheet');
+  const wrap=document.getElementById('sheet-fit');
+  if(!sheet||!wrap){ window.print(); return; }
+  document.body.classList.add('rfit');
+  sheet.classList.add('shot','pfit','measuring');
+  const body=sheet.querySelector('.body');
+  if(body) body.style.rowGap='';
+  const availH=1030;                       // A4 인쇄영역 높이 @96dpi(여백 11mm)
+  const natH=sheet.offsetHeight;           // 710px 폭에서 실제 내용 높이
+  sheet.classList.remove('measuring');
+  let s=1, wrapH;
+  if(natH<availH && body){                 // 짧으면 → 본문 행 간격을 벌려 채움
+    const kids=[...body.children].filter(k=>k.offsetParent!==null);
+    const tops=[...new Set(kids.map(k=>Math.round(k.offsetTop)))];  // 행 수 = 서로 다른 상단좌표 수
+    const gaps=Math.max(1, tops.length-1);
+    const baseGap=parseFloat(getComputedStyle(body).rowGap)||9;
+    body.style.rowGap=(baseGap+(availH-natH)/gaps)+'px';
+    wrapH=availH;
+  }else{                                    // 길면 → 한 장에 맞게 축소
+    s=availH/natH; wrapH=Math.ceil(natH*s);
+  }
+  document.documentElement.style.setProperty('--pscale', s);
+  wrap.style.setProperty('--pfith', wrapH+'px');
+  const cleanup=()=>{
+    sheet.classList.remove('shot','pfit');
+    if(body) body.style.rowGap='';
+    document.body.classList.remove('rfit');
+    document.documentElement.style.removeProperty('--pscale');
+    wrap.style.removeProperty('--pfith');
+    window.removeEventListener('afterprint',cleanup);
+  };
+  window.addEventListener('afterprint',cleanup);
+  setTimeout(()=>window.print(),60);
+  setTimeout(cleanup,2000);                 // 예비 정리
+}
+
 let CURRENT=SAMPLE;
 render(SAMPLE);
+fillGenSel();
+fillCodeSel();
 try{getKey();}catch(e){}
+refreshKeyStatus();
+maybeShowKeySetup();
 </script>
 </body>
 </html>
