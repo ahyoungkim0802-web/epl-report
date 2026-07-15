@@ -417,6 +417,14 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
     <button class="btn btn-go" onclick="openGenerator()">🖨️ 답안지 생성</button>
     <span class="msl-note">선택한 시험의 <b>코드 박힌 답안지</b>를 만들어 인쇄합니다.</span>
   </div>
+  <div class="prevadd no-print">
+    <span class="pl">전·후 비교</span>
+    <input id="pv-label" class="pvi" style="width:110px" value="교재 시작 전" title="회차 이름">
+    <input id="pv-date" class="pvi" style="width:130px" placeholder="날짜 (예: 2026.03.02)" title="날짜">
+    <input id="pv-score" class="pvi" type="number" min="0" max="100" style="width:100px" placeholder="정답률 %" title="이전 정답률">
+    <button class="btn btn-go" onclick="addPrevRound()">＋ 교재 시작 전 추가</button>
+    <span class="ph">지금 채점 결과가 <b>‘교재 마친 후’</b>가 되고, 여기 넣은 값이 <b>‘교재 시작 전’</b>으로 그래프 맨 앞에 들어갑니다. (먼저 사진 채점/붙여넣기로 성적표를 만든 뒤 사용)</span>
+  </div>
 </div>
 
 <!-- REPORT -->
@@ -950,6 +958,7 @@ function removeRound(i){
   render(CURRENT);
 }
 function addPrevRound(){
+  if(typeof CURRENT==='undefined'||!CURRENT){ alert('먼저 성적표를 만든 뒤(📸 사진 채점 또는 붙여넣기) ‘교재 시작 전’ 회차를 추가하세요.'); return; }
   const lbl=(document.getElementById('pv-label')||{}).value||'1차';
   const dt=((document.getElementById('pv-date')||{}).value||'').trim();
   const raw=(document.getElementById('pv-score')||{}).value;
