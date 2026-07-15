@@ -375,6 +375,11 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
 <div class="loader no-print">
   <h2>넷튜터 성취테스트 → EPL 리포트 변환</h2>
   <p><b style="color:var(--weak)">가장 확실</b> — 넷튜터 "성적표 출력"으로 저장한 <b>PDF 파일</b>을 [PDF 불러오기]로 올리거나, 페이지에서 <b>Ctrl+A → 복사 → 붙여넣기</b>. (둘 다 인터넷 연결이 필요 없습니다.)<br>또는 성적표 <b>링크 주소</b>를 붙여넣어도 됩니다(망 상태에 따라 가끔 느릴 수 있음).</p>
+  <div class="modesel" style="border:2px solid var(--go,#2f7d5b);border-radius:10px;padding:8px 10px">
+    <span class="msl">① 채점 시험 선택</span>
+    <select id="code-sel" class="t-name" style="width:auto" onchange="pickByCode()"></select>
+    <span id="code-msg" class="msl-note">📸 사진 채점 전에 <b>먼저 여기서 시험을 고르세요.</b> 정답표가 자동 설정되어, 채점 후 <b>검수 화면</b>에서 O·X를 확인·수정할 수 있습니다.</span>
+  </div>
   <textarea id="paste" placeholder="상세 성적표 내용을 붙여넣거나, 링크 주소(https://...)를 입력하세요…"></textarea>
   <div class="fld">
     <input class="t-name" id="t-name" placeholder="담당 교사명 (예: 김아영)" oninput="reflow()">
@@ -411,11 +416,6 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
     <select id="gen-sel" class="t-name" style="width:auto"></select>
     <button class="btn btn-go" onclick="openGenerator()">🖨️ 답안지 생성</button>
     <span class="msl-note">선택한 시험의 <b>코드 박힌 답안지</b>를 만들어 인쇄합니다.</span>
-  </div>
-  <div class="modesel">
-    <span class="msl">채점 시험 선택</span>
-    <select id="code-sel" class="t-name" style="width:auto" onchange="pickByCode()"></select>
-    <span id="code-msg" class="msl-note">답안지 상단 코드와 같은 시험을 고르면 위 ‘채점 프리셋’이 자동 설정됩니다.</span>
   </div>
 </div>
 
