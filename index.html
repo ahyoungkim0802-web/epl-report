@@ -786,8 +786,8 @@ function render(d){
   if(d.weak&&d.weak.length){
     const seen=new Set();
     const weak=d.weak.filter(w=>{const k=w.item+'|'+w.page;if(seen.has(k))return false;seen.add(k);return true;}).slice(0,6);
-    html+=`<div class="block blk-weak"><div class="eyebrow">우선 학습 항목 <span class="eyebrow-sub">문법 항목 · 교재 페이지</span></div><div class="weak">`;
-    weak.forEach(w=>{html+=`<div class="wi"><span>${w.item}</span><b>교재 ${w.page}</b></div>`;});
+    html+=`<div class="block blk-weak"><div class="eyebrow">우선 학습 항목 <span class="eyebrow-sub">문법 항목</span></div><div class="weak">`;
+    weak.forEach(w=>{html+=`<div class="wi"><span>${w.item}</span></div>`;});
     html+=`</div></div>`;
   }
 
@@ -1256,13 +1256,18 @@ const PRESETS={
   ]}
 };
 function _circle(s){s=(s||'').toString();const m={'①':'1','②':'2','③':'3','④':'4','⑤':'5'};for(const k in m)if(s.includes(k))return m[k];const d=s.match(/[1-5]/);return d?d[0]:'';}
-function _norm(s){return (s||'').toString().toLowerCase().replace(/[^a-z0-9가-힣]/g,'');}
+function _norm(s){return (s||'').toString().toLowerCase().replace(/['’`]/g,'').replace(/[^a-z0-9가-힣]+/g,' ').trim().replace(/\s+/g,' ');}
+function _editDist(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;const prev=[];for(let j=0;j<=n;j++)prev[j]=j;for(let i=1;i<=m;i++){let diag=prev[0];prev[0]=i;for(let j=1;j<=n;j++){const tmp=prev[j];prev[j]=Math.min(prev[j]+1,prev[j-1]+1,diag+(a.charCodeAt(i-1)===b.charCodeAt(j-1)?0:1));diag=tmp;}}return prev[n];}
+function _sim(a,b){const L=Math.max(a.length,b.length);return L?1-_editDist(a,b)/L:1;}
 function _textOk(stu,ans){
-  const a=_norm(stu), b=_norm(ans); if(!a)return false; if(a===b)return true;
-  const at=(stu||'').toLowerCase().split(/[^a-z0-9가-힣]+/).filter(Boolean);
-  const bt=(ans||'').toLowerCase().split(/[^a-z0-9가-힣]+/).filter(Boolean);
-  if(bt.length>=2){const hit=bt.filter(t=>at.includes(t)).length;return hit/bt.length>=0.7;}
-  return b.length>3 && a.includes(b);
+  const a=_norm(stu), b=_norm(ans); if(!a||!b) return false;
+  if(a===b) return true;                                    // 완전 일치(어순 포함)
+  if(a.replace(/ /g,'')===b.replace(/ /g,'')) return true;  // 띄어쓰기만 차이
+  if(b.split(' ').length===1){                              // 정답이 한 단어
+    if((' '+a+' ').includes(' '+b+' ')) return true;        // 그 단어를 온전히 포함하면 정답
+    return _sim(a,b) >= (b.length<=4 ? 0.9 : 0.82);         // 사소한 철자 오차만 허용
+  }
+  return _sim(a,b) >= 0.82;                                 // 문장·배열: 어순+철자 반영, 순서 틀리면 오답
 }
 function gradeAgainstPreset(preset,answers){
   const byN={}; (answers||[]).forEach(a=>byN[a.n]=a.student);
