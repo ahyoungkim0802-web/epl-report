@@ -270,6 +270,11 @@ body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink
 .prevadd .pl{font-weight:700;font-size:12px;color:var(--ink)}
 .prevadd .ph{font-size:11px;color:var(--muted);margin-right:auto}
 .prevadd .pvi{padding:6px 8px;border:1px solid var(--line-soft);border-radius:7px;font-size:12px;background:var(--card);color:var(--ink)}
+/* 클릭 편집 가능한 머릿말·꼬릿말·학년 */
+.who .grade:empty::before{content:'학년';color:var(--muted);font-weight:400}
+[contenteditable="true"]:hover{outline:1px dashed var(--line-soft);outline-offset:2px;border-radius:3px;cursor:text}
+[contenteditable="true"]:focus{outline:2px solid var(--go,#2f7d5b);outline-offset:2px;border-radius:3px}
+@media print{[contenteditable="true"]:hover,[contenteditable="true"]:focus{outline:none}}
 @media print{
   body.gen-open>*:not(#gen-overlay){display:none!important}
   body.gen-open #gen-overlay{position:static!important;display:block!important;background:#fff!important;overflow:visible!important;padding:0}
@@ -681,6 +686,8 @@ function buildComment(d,num){
 }
 
 /* ===== render ===== */
+function _brandGet(k,def){ try{ const v=localStorage.getItem(k); return (v!=null&&v!=='')?v:def; }catch(e){ return def; } }
+function saveBrand(k,el){ try{ localStorage.setItem(k,(el.textContent||'').trim()); }catch(e){} }
 function render(d){
   d.types=(d.types||[]).filter(t=>t&&t.name&&t.name!=='undefined'&&+t.total>0).map(t=>({...t,rate:t.rate??Math.round(t.correct/t.total*100)}));
   const areas=(d.areas||[]).map(a=>({...a,rate:Math.round(a.correct/a.total*100)}));
@@ -702,8 +709,8 @@ function render(d){
   let html=`
   <div class="head">
     <div class="brand">
-      <div class="mark">EPL영어학원</div>
-      <div class="tag">Empower · Practice · Literacy</div>
+      <div class="mark" contenteditable="true" spellcheck="false" onblur="saveBrand('epl_brand_name',this)" title="클릭해 학원명(머릿말) 수정 — 저장되어 계속 유지됩니다">${_brandGet('epl_brand_name','EPL영어학원')}</div>
+      <div class="tag" contenteditable="true" spellcheck="false" onblur="saveBrand('epl_brand_tag',this)" title="클릭해 머릿말 부제 수정">${_brandGet('epl_brand_tag','Empower · Practice · Literacy')}</div>
     </div>
     <div class="doc-label">
       <div class="k">Achievement Report</div>
@@ -713,7 +720,7 @@ function render(d){
 
   <div class="who">
     <span class="name" contenteditable="true" title="클릭해 이름 수정">${d.name||'학생'}</span>
-    <span class="grade">${d.grade||''}</span>
+    <span class="grade" contenteditable="true" spellcheck="false" onblur="if(typeof CURRENT!=='undefined'&&CURRENT)CURRENT.grade=this.textContent.trim()" title="클릭해 학년 수정">${d.grade||''}</span>
     <span class="meta"><b>${d.book||''}</b><br>${d.exam||''} · ${d.date||''}</span>
   </div>
 
@@ -816,8 +823,8 @@ function render(d){
 
   html+=`</div>
   <div class="foot">
-    <span class="m">EPL영어학원 · 동백 1관 · 백현 2관</span>
-    <span>읽기 → 사고 → 문장화 → 표현</span>
+    <span class="m" contenteditable="true" spellcheck="false" onblur="saveBrand('epl_footer',this)" title="클릭해 꼬릿말 수정 — 저장되어 계속 유지됩니다">${_brandGet('epl_footer','EPL영어학원 · 동백 1관 · 백현 2관')}</span>
+    <span contenteditable="true" spellcheck="false" onblur="saveBrand('epl_footer2',this)" title="클릭해 꼬릿말 부제 수정">${_brandGet('epl_footer2','읽기 → 사고 → 문장화 → 표현')}</span>
   </div>`;
 
   document.getElementById('sheet').innerHTML=html;
